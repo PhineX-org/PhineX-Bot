@@ -131,7 +131,7 @@ app.get('/auth/logout', (req, res) => {
 });
 
 // API Routes
-app.get(`${API_BASE}/api/user`, isAuthenticated, (req, res) => {
+app.get('/api/user', isAuthenticated, (req, res) => {
     res.json({
         id: req.user.id,
         username: req.user.username,
@@ -140,7 +140,7 @@ app.get(`${API_BASE}/api/user`, isAuthenticated, (req, res) => {
     });
 });
 
-app.get(`${API_BASE}/api/guilds`, isAuthenticated, async (req, res) => {
+app.get('/api/guilds', isAuthenticated, async (req, res) => {
     try {
         // Get user's guilds from Discord API
         const response = await fetch('https://discord.com/api/v10/users/@me/guilds', {
@@ -173,7 +173,7 @@ app.get(`${API_BASE}/api/guilds`, isAuthenticated, async (req, res) => {
     }
 });
 
-app.get(`${API_BASE}/api/guild/:guildId`, isAuthenticated, async (req, res) => {
+app.get('/api/guild/:guildId', isAuthenticated, async (req, res) => {
     const { guildId } = req.params;
     
     // Verify user has access to this guild
@@ -231,7 +231,7 @@ app.get(`${API_BASE}/api/guild/:guildId`, isAuthenticated, async (req, res) => {
     }
 });
 
-app.post(`${API_BASE}/api/guild/:guildId/settings`, isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/settings', isAuthenticated, async (req, res) => {
     const { guildId } = req.params;
     const settings = req.body;
 
@@ -244,7 +244,7 @@ app.post(`${API_BASE}/api/guild/:guildId/settings`, isAuthenticated, async (req,
     }
 });
 
-app.post(`${API_BASE}/api/guild/:guildId/role/create`, isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/role/create', isAuthenticated, async (req, res) => {
     const { guildId } = req.params;
     const { name, color, permissions } = req.body;
 
@@ -263,7 +263,7 @@ app.post(`${API_BASE}/api/guild/:guildId/role/create`, isAuthenticated, async (r
     }
 });
 
-app.delete(`${API_BASE}/api/guild/:guildId/role/:roleId`, isAuthenticated, async (req, res) => {
+app.delete('/api/guild/:guildId/role/:roleId', isAuthenticated, async (req, res) => {
     const { guildId, roleId } = req.params;
 
     try {
@@ -282,7 +282,7 @@ app.delete(`${API_BASE}/api/guild/:guildId/role/:roleId`, isAuthenticated, async
     }
 });
 
-app.post(`${API_BASE}/api/guild/:guildId/channel/create`, isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/channel/create', isAuthenticated, async (req, res) => {
     const { guildId } = req.params;
     const { name, type } = req.body;
 
@@ -300,7 +300,7 @@ app.post(`${API_BASE}/api/guild/:guildId/channel/create`, isAuthenticated, async
     }
 });
 
-app.delete(`${API_BASE}/api/guild/:guildId/channel/:channelId`, isAuthenticated, async (req, res) => {
+app.delete('/api/guild/:guildId/channel/:channelId', isAuthenticated, async (req, res) => {
     const { guildId, channelId } = req.params;
 
     try {
@@ -319,7 +319,7 @@ app.delete(`${API_BASE}/api/guild/:guildId/channel/:channelId`, isAuthenticated,
     }
 });
 
-app.post(`${API_BASE}/api/guild/:guildId/member/:userId/ban`, isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/member/:userId/ban', isAuthenticated, async (req, res) => {
     const { guildId, userId } = req.params;
     const { reason } = req.body;
 
@@ -335,7 +335,7 @@ app.post(`${API_BASE}/api/guild/:guildId/member/:userId/ban`, isAuthenticated, a
     }
 });
 
-app.post(`${API_BASE}/api/guild/:guildId/member/:userId/kick`, isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/member/:userId/kick', isAuthenticated, async (req, res) => {
     const { guildId, userId } = req.params;
     const { reason } = req.body;
 
@@ -352,7 +352,7 @@ app.post(`${API_BASE}/api/guild/:guildId/member/:userId/kick`, isAuthenticated, 
     }
 });
 
-app.post(`${API_BASE}/api/guild/:guildId/member/:userId/warn`, isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/member/:userId/warn', isAuthenticated, async (req, res) => {
     const { guildId, userId } = req.params;
     const { reason } = req.body;
 
@@ -367,7 +367,7 @@ app.post(`${API_BASE}/api/guild/:guildId/member/:userId/warn`, isAuthenticated, 
     }
 });
 
-app.get(`${API_BASE}/api/guild/:guildId/warnings/:userId`, isAuthenticated, async (req, res) => {
+app.get('/api/guild/:guildId/warnings/:userId', isAuthenticated, async (req, res) => {
     const { guildId, userId } = req.params;
 
     try {
@@ -379,7 +379,7 @@ app.get(`${API_BASE}/api/guild/:guildId/warnings/:userId`, isAuthenticated, asyn
     }
 });
 
-app.get(`${API_BASE}/api/guild/:guildId/logs`, isAuthenticated, async (req, res) => {
+app.get('/api/guild/:guildId/logs', isAuthenticated, async (req, res) => {
     const { guildId } = req.params;
     const limit = parseInt(req.query.limit) || 50;
 
@@ -393,7 +393,7 @@ app.get(`${API_BASE}/api/guild/:guildId/logs`, isAuthenticated, async (req, res)
 });
 
 // Social Links API
-app.post(`${API_BASE}/api/guild/:guildId/social`, isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/social', isAuthenticated, async (req, res) => {
     const { guildId } = req.params;
     const socialLinks = req.body;
 
@@ -408,7 +408,7 @@ app.post(`${API_BASE}/api/guild/:guildId/social`, isAuthenticated, async (req, r
     }
 });
 
-app.get(`${API_BASE}/api/guild/:guildId/social`, isAuthenticated, async (req, res) => {
+app.get('/api/guild/:guildId/social', isAuthenticated, async (req, res) => {
     const { guildId } = req.params;
 
     try {
