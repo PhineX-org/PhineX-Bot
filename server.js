@@ -7,7 +7,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 const cors = require('cors');
 const Database = require('./database.js');
-
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const app = express();
 const db = new Database();
 // Load config from environment variables (Railway) or config.json (local development)
@@ -94,9 +95,16 @@ passport.use(new DiscordStrategy({
 }));
 
 // Auth middleware
-function isAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) return next();
-    res.status(401).json({ error: 'Unauthorized' });
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ error: 'Invalid or expired token' });
+        req.user = user;  // Attach user info to request
+        next();
+    });
 }
 
 // Routes
@@ -113,20 +121,19 @@ app.get('/auth/discord', passport.authenticate('discord'));
 app.get('/auth/discord/callback',
     passport.authenticate('discord', { failureRedirect: '/' }),
     async (req, res) => {
-        // Store session in database (optional)
-        const sessionId = crypto.randomBytes(32).toString('hex');
-        await db.createSession(
-            sessionId,
-            req.user.id,
-            req.user.accessToken,
-            req.user.refreshToken,
-            604800
+        // Create a JWT containing the user ID and access token (if needed)
+        const token = jwt.sign(
+            { 
+                id: req.user.id,
+                username: req.user.username,
+                avatar: req.user.avatar,
+                accessToken: req.user.accessToken  // optionally store
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' }
         );
-        // Force session save before redirect
-        req.session.save((err) => {
-            if (err) console.error('Session save error:', err);
-            res.redirect('https://phinex-org.github.io/PhineX-Bot/dashboard.html');
-        });
+        // Redirect to GitHub Pages dashboard with token in URL fragment
+        res.redirect(`https://phinex-org.github.io/PhineX-Bot/dashboard.html#token=${token}`);
     }
 );
 
@@ -138,7 +145,7 @@ app.get('/auth/logout', (req, res) => {
 });
 
 // API Routes
-app.get('/api/user', isAuthenticated, (req, res) => {
+app.get('/api/user', authenticateToken, (req, res) => {
     res.json({
         id: req.user.id,
         username: req.user.username,
@@ -147,7 +154,7 @@ app.get('/api/user', isAuthenticated, (req, res) => {
     });
 });
 
-app.get('/api/guilds', isAuthenticated, async (req, res) => {
+app.get('/api/guilds', authenticateToken, async (req, res) => {
     try {
         // Get user's guilds from Discord API
         const response = await fetch('https://discord.com/api/v10/users/@me/guilds', {
@@ -180,7 +187,7 @@ app.get('/api/guilds', isAuthenticated, async (req, res) => {
     }
 });
 
-app.get('/api/guild/:guildId', isAuthenticated, async (req, res) => {
+app.get('/api/guild/:guildId', authenticateToken, async (req, res) => {
     const { guildId } = req.params;
     
     // Verify user has access to this guild
@@ -238,7 +245,7 @@ app.get('/api/guild/:guildId', isAuthenticated, async (req, res) => {
     }
 });
 
-app.post('/api/guild/:guildId/settings', isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/settings', authenticateToken, async (req, res) => {
     const { guildId } = req.params;
     const settings = req.body;
 
@@ -251,7 +258,7 @@ app.post('/api/guild/:guildId/settings', isAuthenticated, async (req, res) => {
     }
 });
 
-app.post('/api/guild/:guildId/role/create', isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/role/create', authenticateToken, async (req, res) => {
     const { guildId } = req.params;
     const { name, color, permissions } = req.body;
 
@@ -270,7 +277,7 @@ app.post('/api/guild/:guildId/role/create', isAuthenticated, async (req, res) =>
     }
 });
 
-app.delete('/api/guild/:guildId/role/:roleId', isAuthenticated, async (req, res) => {
+app.delete('/api/guild/:guildId/role/:roleId', authenticateToken, async (req, res) => {
     const { guildId, roleId } = req.params;
 
     try {
@@ -289,7 +296,7 @@ app.delete('/api/guild/:guildId/role/:roleId', isAuthenticated, async (req, res)
     }
 });
 
-app.post('/api/guild/:guildId/channel/create', isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/channel/create', authenticateToken, async (req, res) => {
     const { guildId } = req.params;
     const { name, type } = req.body;
 
@@ -307,7 +314,7 @@ app.post('/api/guild/:guildId/channel/create', isAuthenticated, async (req, res)
     }
 });
 
-app.delete('/api/guild/:guildId/channel/:channelId', isAuthenticated, async (req, res) => {
+app.delete('/api/guild/:guildId/channel/:channelId', authenticateToken, async (req, res) => {
     const { guildId, channelId } = req.params;
 
     try {
@@ -326,7 +333,7 @@ app.delete('/api/guild/:guildId/channel/:channelId', isAuthenticated, async (req
     }
 });
 
-app.post('/api/guild/:guildId/member/:userId/ban', isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/member/:userId/ban', authenticateToken, async (req, res) => {
     const { guildId, userId } = req.params;
     const { reason } = req.body;
 
@@ -342,7 +349,7 @@ app.post('/api/guild/:guildId/member/:userId/ban', isAuthenticated, async (req, 
     }
 });
 
-app.post('/api/guild/:guildId/member/:userId/kick', isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/member/:userId/kick', authenticateToken, async (req, res) => {
     const { guildId, userId } = req.params;
     const { reason } = req.body;
 
@@ -359,7 +366,7 @@ app.post('/api/guild/:guildId/member/:userId/kick', isAuthenticated, async (req,
     }
 });
 
-app.post('/api/guild/:guildId/member/:userId/warn', isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/member/:userId/warn', authenticateToken, async (req, res) => {
     const { guildId, userId } = req.params;
     const { reason } = req.body;
 
@@ -374,7 +381,7 @@ app.post('/api/guild/:guildId/member/:userId/warn', isAuthenticated, async (req,
     }
 });
 
-app.get('/api/guild/:guildId/warnings/:userId', isAuthenticated, async (req, res) => {
+app.get('/api/guild/:guildId/warnings/:userId', authenticateToken, async (req, res) => {
     const { guildId, userId } = req.params;
 
     try {
@@ -386,7 +393,7 @@ app.get('/api/guild/:guildId/warnings/:userId', isAuthenticated, async (req, res
     }
 });
 
-app.get('/api/guild/:guildId/logs', isAuthenticated, async (req, res) => {
+app.get('/api/guild/:guildId/logs', authenticateToken, async (req, res) => {
     const { guildId } = req.params;
     const limit = parseInt(req.query.limit) || 50;
 
@@ -400,7 +407,7 @@ app.get('/api/guild/:guildId/logs', isAuthenticated, async (req, res) => {
 });
 
 // Social Links API
-app.post('/api/guild/:guildId/social', isAuthenticated, async (req, res) => {
+app.post('/api/guild/:guildId/social', authenticateToken, async (req, res) => {
     const { guildId } = req.params;
     const socialLinks = req.body;
 
@@ -415,7 +422,7 @@ app.post('/api/guild/:guildId/social', isAuthenticated, async (req, res) => {
     }
 });
 
-app.get('/api/guild/:guildId/social', isAuthenticated, async (req, res) => {
+app.get('/api/guild/:guildId/social', authenticateToken, async (req, res) => {
     const { guildId } = req.params;
 
     try {

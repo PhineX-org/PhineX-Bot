@@ -539,7 +539,8 @@
                 <div class="user-info">
                     <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
                     <span id="username"></span>
-                    <button class="logout-btn" onclick="window.location.href=`${API_BASE}/auth/logout`">Logout</button>                </div>
+                    <button class="logout-btn" onclick="logout()">Logout</button>                
+                </div>
             </header>
 
             <!-- Overview Section -->
@@ -740,6 +741,11 @@
                 document.getElementById('authModal').classList.add('active');
             }
         }
+
+        function logout() {
+        localStorage.removeItem('phinex_token');
+        window.location.href = 'https://phinex-org.github.io/PhineX-Bot/index.html';
+    }
 
         // Load guilds
         async function loadGuilds() {
