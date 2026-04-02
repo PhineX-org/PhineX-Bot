@@ -473,7 +473,7 @@
         <div class="modal-content">
             <h2 class="modal-title">🔒 Authentication Required</h2>
             <p class="modal-text">Please login with Discord to access the dashboard</p>
-            <button class="modal-btn" onclick="window.location.href='/auth/discord'">Login with Discord</button>
+            <button class="modal-btn" onclick="window.location.href=`${API_BASE}/auth/discord`">Login with Discord</button>
         </div>
     </div>
 
@@ -718,6 +718,7 @@
     </div>
 
     <script>
+        const API_BASE = 'https://phinex-bot-production.up.railway.app';
         let currentGuild = null;
         let userData = null;
         let guildData = null;
@@ -725,7 +726,7 @@
         // Check authentication
         async function checkAuth() {
             try {
-                const res = await fetch('/api/user');
+                const res = await fetch(`${API_BASE}/api/user`);
                 if (res.ok) {
                     userData = await res.json();
                     document.getElementById('username').textContent = userData.username;
@@ -744,7 +745,7 @@
         // Load guilds
         async function loadGuilds() {
             try {
-                const res = await fetch('/api/guilds');
+                const res = await fetch(`${API_BASE}/api/guilds`);
                 const guilds = await res.json();
                 
                 const serverSelect = document.getElementById('serverSelect');
@@ -778,7 +779,7 @@
         async function loadGuild(guildId) {
             currentGuild = guildId;
             try {
-                const res = await fetch(`/api/guild/${guildId}`);
+                const res = await fetch(`${API_BASE}/api/guild/${guildId}`);
                 guildData = await res.json();
                 
                 // Update stats
@@ -873,7 +874,7 @@
             if (!userId || !currentGuild) return alert('Please fill all fields');
             
             try {
-                const res = await fetch(`/api/guild/${currentGuild}/member/${userId}/ban`, {
+                const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/member/${userId}/ban`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ reason })
@@ -898,7 +899,7 @@
             if (!userId || !currentGuild) return alert('Please fill all fields');
             
             try {
-                const res = await fetch(`/api/guild/${currentGuild}/member/${userId}/kick`, {
+                const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/member/${userId}/kick`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ reason })
@@ -923,7 +924,7 @@
             if (!userId || !currentGuild) return alert('Please fill all fields');
             
             try {
-                const res = await fetch(`/api/guild/${currentGuild}/member/${userId}/warn`, {
+                const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/member/${userId}/warn`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ reason })
@@ -950,7 +951,7 @@
             if (!name || !currentGuild) return alert('Please enter a role name');
             
             try {
-                const res = await fetch(`/api/guild/${currentGuild}/role/create`, {
+                const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/role/create`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, color })
@@ -972,7 +973,7 @@
             if (!confirm('Are you sure you want to delete this role?')) return;
             
             try {
-                const res = await fetch(`/api/guild/${currentGuild}/role/${roleId}`, {
+                const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/role/${roleId}`, {
                     method: 'DELETE'
                 });
                 
@@ -995,7 +996,7 @@
             if (!name || !currentGuild) return alert('Please enter a channel name');
             
             try {
-                const res = await fetch(`/api/guild/${currentGuild}/channel/create`, {
+                const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/channel/create`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, type })
@@ -1017,7 +1018,7 @@
             if (!confirm('Are you sure you want to delete this channel?')) return;
             
             try {
-                const res = await fetch(`/api/guild/${currentGuild}/channel/${channelId}`, {
+                const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/channel/${channelId}`, {
                     method: 'DELETE'
                 });
                 
@@ -1040,7 +1041,7 @@
             if (!currentGuild) return alert('Please select a server');
             
             try {
-                const res = await fetch(`/api/guild/${currentGuild}/settings`, {
+                const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/settings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1067,7 +1068,7 @@
             if (!currentGuild) return alert('Please select a server');
             
             try {
-                const res = await fetch(`/api/guild/${currentGuild}/settings`, {
+                const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/settings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
