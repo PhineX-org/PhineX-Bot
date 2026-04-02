@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhineX Dashboard - Server Control Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght:400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --neon-cyan: #00ffff;
+            --neon-pink: #ff00ff;
+            --neon-blue: #0099ff;
+            --dark-bg: #0a0a0f;
+            --card-bg: #121218;
+            --sidebar-bg: #0d0d13;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff3366;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            animation: modalSlideIn 0.4s ease;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.3);
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-text {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .modal-btn {
+            padding: 1rem 2.5rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+            border: none;
+            border-radius: 50px;
+            color: var(--dark-bg);
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.6);
+        }
+
+        /* Dashboard Layout */
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 2rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .server-selector {
+            margin-top: 1.5rem;
+            padding: 0 1.5rem;
+        }
+
+        .server-selector select {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--card-bg);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .server-selector select:focus {
+            outline: none;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .nav-menu {
+            margin-top: 2rem;
+            list-style: none;
+        }
+
+        .nav-item {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .nav-item:hover {
+            background: rgba(0, 255, 255, 0.1);
+            border-left-color: var(--neon-cyan);
+        }
+
+        .nav-item.active {
+            background: rgba(0, 255, 255, 0.15);
+            border-left-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        .nav-icon {
+            font-size: 1.3rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .header-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--neon-cyan);
+        }
+
+        .logout-btn {
+            padding: 0.6rem 1.5rem;
+            background: transparent;
+            border: 2px solid var(--danger);
+            border-radius: 50px;
+            color: var(--danger);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Content Sections */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+        }
+
+        .control-section {
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--neon-cyan);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--dark-bg);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+            color: var(--dark-bg);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff1a4d;
+            transform: translateY(-3px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--dark-bg);
+        }
+
+        .btn-success:hover {
+            background: #00cc70;
+            transform: translateY(-3px);
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--dark-bg);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 10px;
+            margin-bottom: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .list-item:hover {
+            background: rgba(0, 255, 255, 0.05);
+            border-color: var(--neon-cyan);
+        }
+
+        .list-item-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .list-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 255, 255, 0.1);
+            border-top: 3px solid var(--neon-cyan);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .alert-danger {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Modal -->
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <h2 class="modal-title">🔒 Authentication Required</h2>
+            <p class="modal-text">Please login with Discord to access the dashboard</p>
+            <button class="modal-btn" onclick="window.location.href='/auth/discord'">Login with Discord</button>
+        </div>
+    </div>
+
+    <!-- Server Selection Modal -->
+    <div class="modal" id="serverModal">
+        <div class="modal-content">
+            <h2 class="modal-title">🎮 Select Your Server</h2>
+            <p class="modal-text">Choose a server to manage</p>
+            <div id="serverList"></div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">PHINEX</div>
+            </div>
+
+            <div class="server-selector">
+                <select id="serverSelect">
+                    <option value="">Loading servers...</option>
+                </select>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item active" data-section="overview">
+                    <span class="nav-icon">📊</span>
+                    <span>Overview</span>
+                </li>
+                <li class="nav-item" data-section="moderation">
+                    <span class="nav-icon">🔨</span>
+                    <span>Moderation</span>
+                </li>
+                <li class="nav-item" data-section="roles">
+                    <span class="nav-icon">🎭</span>
+                    <span>Roles</span>
+                </li>
+                <li class="nav-item" data-section="channels">
+                    <span class="nav-icon">📢</span>
+                    <span>Channels</span>
+                </li>
+                <li class="nav-item" data-section="giveaways">
+                    <span class="nav-icon">🎁</span>
+                    <span>Giveaways</span>
+                </li>
+                <li class="nav-item" data-section="starboard">
+                    <span class="nav-icon">⭐</span>
+                    <span>Starboard</span>
+                </li>
+                <li class="nav-item" data-section="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <h1 class="header-title">Control Panel</h1>
+                <div class="user-info">
+                    <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+                    <span id="username"></span>
+                    <button class="logout-btn" onclick="window.location.href='/auth/logout'">Logout</button>
+                </div>
+            </header>
+
+            <!-- Overview Section -->
+            <div class="section active" id="overview">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Members</div>
+                        <div class="stat-value" id="memberCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Roles</div>
+                        <div class="stat-value" id="roleCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Channels</div>
+                        <div class="stat-value" id="channelCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Bot Status</div>
+                        <div class="stat-value" style="color: var(--success);">✓ Online</div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3 class="control-title">Quick Actions</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <button class="btn btn-primary" onclick="switchSection('moderation')">Moderation</button>
+                        <button class="btn btn-primary" onclick="switchSection('roles')">Manage Roles</button>
+                        <button class="btn btn-primary" onclick="switchSection('channels')">Manage Channels</button>
+                        <button class="btn btn-primary" onclick="switchSection('giveaways')">Start Giveaway</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Moderation Section -->
+            <div class="section" id="moderation">
+                <div class="control-section">
+                    <h3 class="control-title">Ban Member</h3>
+                    <div class="form-group">
+                        <label class="form-label">User ID</label>
+                        <input type="text" class="form-input" id="banUserId" placeholder="Enter user ID">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reason</label>
+                        <input type="text" class="form-input" id="banReason" placeholder="Reason for ban">
+                    </div>
+                    <button class="btn btn-danger" onclick="banUser()">Ban User</button>
+                </div>
+
+                <div class="control-section">
+                    <h3 class="control-title">Kick Member</h3>
+                    <div class="form-group">
+                        <label class="form-label">User ID</label>
+                        <input type="text" class="form-input" id="kickUserId" placeholder="Enter user ID">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reason</label>
+                        <input type="text" class="form-input" id="kickReason" placeholder="Reason for kick">
+                    </div>
+                    <button class="btn btn-danger" onclick="kickUser()">Kick User</button>
+                </div>
+
+                <div class="control-section">
+                    <h3 class="control-title">Warn Member</h3>
+                    <div class="form-group">
+                        <label class="form-label">User ID</label>
+                        <input type="text" class="form-input" id="warnUserId" placeholder="Enter user ID">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reason</label>
+                        <input type="text" class="form-input" id="warnReason" placeholder="Reason for warning">
+                    </div>
+                    <button class="btn btn-primary" onclick="warnUser()">Warn User</button>
+                </div>
+            </div>
+
+            <!-- Roles Section -->
+            <div class="section" id="roles">
+                <div class="control-section">
+                    <h3 class="control-title">Create New Role</h3>
+                    <div class="form-group">
+                        <label class="form-label">Role Name</label>
+                        <input type="text" class="form-input" id="newRoleName" placeholder="Enter role name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Role Color</label>
+                        <input type="color" class="form-input" id="newRoleColor" value="#99AAB5">
+                    </div>
+                    <button class="btn btn-success" onclick="createRole()">Create Role</button>
+                </div>
+
+                <div class="control-section">
+                    <h3 class="control-title">Server Roles</h3>
+                    <div id="rolesList"></div>
+                </div>
+            </div>
+
+            <!-- Channels Section -->
+            <div class="section" id="channels">
+                <div class="control-section">
+                    <h3 class="control-title">Create New Channel</h3>
+                    <div class="form-group">
+                        <label class="form-label">Channel Name</label>
+                        <input type="text" class="form-input" id="newChannelName" placeholder="Enter channel name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Channel Type</label>
+                        <select class="form-select" id="newChannelType">
+                            <option value="text">Text Channel</option>
+                            <option value="voice">Voice Channel</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success" onclick="createChannel()">Create Channel</button>
+                </div>
+
+                <div class="control-section">
+                    <h3 class="control-title">Server Channels</h3>
+                    <div id="channelsList"></div>
+                </div>
+            </div>
+
+            <!-- Giveaways Section -->
+            <div class="section" id="giveaways">
+                <div class="control-section">
+                    <h3 class="control-title">Start New Giveaway</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                        Note: Use Discord commands to start giveaways: <code>!giveaway &lt;duration&gt; &lt;winners&gt; &lt;prize&gt;</code>
+                    </p>
+                    <p style="color: var(--neon-cyan);">Example: !giveaway 1h 2 Discord Nitro</p>
+                </div>
+            </div>
+
+            <!-- Starboard Section -->
+            <div class="section" id="starboard">
+                <div class="control-section">
+                    <h3 class="control-title">Starboard Configuration</h3>
+                    <div class="form-group">
+                        <label class="form-label">Starboard Channel</label>
+                        <select class="form-select" id="starboardChannel">
+                            <option value="">Select channel...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Star Threshold</label>
+                        <input type="number" class="form-input" id="starThreshold" value="3" min="1">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveStarboard()">Save Settings</button>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="section" id="settings">
+                <div class="control-section">
+                    <h3 class="control-title">General Settings</h3>
+                    <div class="form-group">
+                        <label class="form-label">Command Prefix</label>
+                        <input type="text" class="form-input" id="prefix" value="!" maxlength="3">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Welcome Channel</label>
+                        <select class="form-select" id="welcomeChannel">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Log Channel</label>
+                        <select class="form-select" id="logChannel">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentGuild = null;
+        let userData = null;
+        let guildData = null;
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/user');
+                if (res.ok) {
+                    userData = await res.json();
+                    document.getElementById('username').textContent = userData.username;
+                    document.getElementById('userAvatar').src = `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`;
+                    document.getElementById('authModal').classList.remove('active');
+                    document.getElementById('dashboard').style.display = 'flex';
+                    loadGuilds();
+                } else {
+                    document.getElementById('authModal').classList.add('active');
+                }
+            } catch (error) {
+                document.getElementById('authModal').classList.add('active');
+            }
+        }
+
+        // Load guilds
+        async function loadGuilds() {
+            try {
+                const res = await fetch('/api/guilds');
+                const guilds = await res.json();
+                
+                const serverSelect = document.getElementById('serverSelect');
+                serverSelect.innerHTML = '<option value="">Select a server...</option>';
+                
+                const managedGuilds = guilds.filter(g => g.hasBot);
+                
+                if (managedGuilds.length === 0) {
+                    serverSelect.innerHTML = '<option value="">No servers with bot</option>';
+                    return;
+                }
+
+                managedGuilds.forEach(guild => {
+                    const option = document.createElement('option');
+                    option.value = guild.id;
+                    option.textContent = guild.name;
+                    serverSelect.appendChild(option);
+                });
+
+                serverSelect.onchange = (e) => {
+                    if (e.target.value) {
+                        loadGuild(e.target.value);
+                    }
+                };
+            } catch (error) {
+                console.error('Error loading guilds:', error);
+            }
+        }
+
+        // Load guild data
+        async function loadGuild(guildId) {
+            currentGuild = guildId;
+            try {
+                const res = await fetch(`/api/guild/${guildId}`);
+                guildData = await res.json();
+                
+                // Update stats
+                document.getElementById('memberCount').textContent = guildData.guild.memberCount;
+                document.getElementById('roleCount').textContent = guildData.roles.length;
+                document.getElementById('channelCount').textContent = guildData.channels.length;
+
+                // Load roles list
+                const rolesList = document.getElementById('rolesList');
+                rolesList.innerHTML = '';
+                guildData.roles.forEach(role => {
+                    if (role.name === '@everyone') return;
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.innerHTML = `
+                        <div class="list-item-info">
+                            <div style="width: 20px; height: 20px; background: ${role.color}; border-radius: 5px;"></div>
+                            <span>${role.name}</span>
+                        </div>
+                        <div class="list-item-actions">
+                            <button class="btn btn-danger btn-sm" onclick="deleteRole('${role.id}')">Delete</button>
+                        </div>
+                    `;
+                    rolesList.appendChild(item);
+                });
+
+                // Load channels list
+                const channelsList = document.getElementById('channelsList');
+                channelsList.innerHTML = '';
+                guildData.channels.forEach(channel => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.innerHTML = `
+                        <div class="list-item-info">
+                            <span>${channel.type === 'text' ? '📝' : '🔊'}</span>
+                            <span>${channel.name}</span>
+                        </div>
+                        <div class="list-item-actions">
+                            <button class="btn btn-danger btn-sm" onclick="deleteChannel('${channel.id}')">Delete</button>
+                        </div>
+                    `;
+                    channelsList.appendChild(item);
+                });
+
+                // Populate channel selectors
+                const channelSelects = ['starboardChannel', 'welcomeChannel', 'logChannel'];
+                channelSelects.forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    select.innerHTML = '<option value="">None</option>';
+                    guildData.channels.filter(c => c.type === 'text').forEach(channel => {
+                        const option = document.createElement('option');
+                        option.value = channel.id;
+                        option.textContent = channel.name;
+                        select.appendChild(option);
+                    });
+                });
+
+                // Load settings
+                if (guildData.settings) {
+                    if (guildData.settings.prefix) document.getElementById('prefix').value = guildData.settings.prefix;
+                    if (guildData.settings.starboard_channel) document.getElementById('starboardChannel').value = guildData.settings.starboard_channel;
+                    if (guildData.settings.starboard_threshold) document.getElementById('starThreshold').value = guildData.settings.starboard_threshold;
+                    if (guildData.settings.welcome_channel) document.getElementById('welcomeChannel').value = guildData.settings.welcome_channel;
+                    if (guildData.settings.log_channel) document.getElementById('logChannel').value = guildData.settings.log_channel;
+                }
+            } catch (error) {
+                console.error('Error loading guild:', error);
+                alert('Error loading guild data');
+            }
+        }
+
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                switchSection(item.dataset.section);
+            });
+        });
+
+        function switchSection(sectionId) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            
+            document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+            document.getElementById(sectionId).classList.add('active');
+        }
+
+        // Moderation functions
+        async function banUser() {
+            const userId = document.getElementById('banUserId').value;
+            const reason = document.getElementById('banReason').value;
+            
+            if (!userId || !currentGuild) return alert('Please fill all fields');
+            
+            try {
+                const res = await fetch(`/api/guild/${currentGuild}/member/${userId}/ban`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                
+                if (res.ok) {
+                    alert('User banned successfully!');
+                    document.getElementById('banUserId').value = '';
+                    document.getElementById('banReason').value = '';
+                } else {
+                    alert('Failed to ban user');
+                }
+            } catch (error) {
+                alert('Error banning user');
+            }
+        }
+
+        async function kickUser() {
+            const userId = document.getElementById('kickUserId').value;
+            const reason = document.getElementById('kickReason').value;
+            
+            if (!userId || !currentGuild) return alert('Please fill all fields');
+            
+            try {
+                const res = await fetch(`/api/guild/${currentGuild}/member/${userId}/kick`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                
+                if (res.ok) {
+                    alert('User kicked successfully!');
+                    document.getElementById('kickUserId').value = '';
+                    document.getElementById('kickReason').value = '';
+                } else {
+                    alert('Failed to kick user');
+                }
+            } catch (error) {
+                alert('Error kicking user');
+            }
+        }
+
+        async function warnUser() {
+            const userId = document.getElementById('warnUserId').value;
+            const reason = document.getElementById('warnReason').value;
+            
+            if (!userId || !currentGuild) return alert('Please fill all fields');
+            
+            try {
+                const res = await fetch(`/api/guild/${currentGuild}/member/${userId}/warn`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`User warned successfully! Total warnings: ${data.warnings}`);
+                    document.getElementById('warnUserId').value = '';
+                    document.getElementById('warnReason').value = '';
+                } else {
+                    alert('Failed to warn user');
+                }
+            } catch (error) {
+                alert('Error warning user');
+            }
+        }
+
+        // Role functions
+        async function createRole() {
+            const name = document.getElementById('newRoleName').value;
+            const color = document.getElementById('newRoleColor').value;
+            
+            if (!name || !currentGuild) return alert('Please enter a role name');
+            
+            try {
+                const res = await fetch(`/api/guild/${currentGuild}/role/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, color })
+                });
+                
+                if (res.ok) {
+                    alert('Role created successfully!');
+                    document.getElementById('newRoleName').value = '';
+                    loadGuild(currentGuild);
+                } else {
+                    alert('Failed to create role');
+                }
+            } catch (error) {
+                alert('Error creating role');
+            }
+        }
+
+        async function deleteRole(roleId) {
+            if (!confirm('Are you sure you want to delete this role?')) return;
+            
+            try {
+                const res = await fetch(`/api/guild/${currentGuild}/role/${roleId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (res.ok) {
+                    alert('Role deleted successfully!');
+                    loadGuild(currentGuild);
+                } else {
+                    alert('Failed to delete role');
+                }
+            } catch (error) {
+                alert('Error deleting role');
+            }
+        }
+
+        // Channel functions
+        async function createChannel() {
+            const name = document.getElementById('newChannelName').value;
+            const type = document.getElementById('newChannelType').value;
+            
+            if (!name || !currentGuild) return alert('Please enter a channel name');
+            
+            try {
+                const res = await fetch(`/api/guild/${currentGuild}/channel/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, type })
+                });
+                
+                if (res.ok) {
+                    alert('Channel created successfully!');
+                    document.getElementById('newChannelName').value = '';
+                    loadGuild(currentGuild);
+                } else {
+                    alert('Failed to create channel');
+                }
+            } catch (error) {
+                alert('Error creating channel');
+            }
+        }
+
+        async function deleteChannel(channelId) {
+            if (!confirm('Are you sure you want to delete this channel?')) return;
+            
+            try {
+                const res = await fetch(`/api/guild/${currentGuild}/channel/${channelId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (res.ok) {
+                    alert('Channel deleted successfully!');
+                    loadGuild(currentGuild);
+                } else {
+                    alert('Failed to delete channel');
+                }
+            } catch (error) {
+                alert('Error deleting channel');
+            }
+        }
+
+        // Settings functions
+        async function saveStarboard() {
+            const channel = document.getElementById('starboardChannel').value;
+            const threshold = document.getElementById('starThreshold').value;
+            
+            if (!currentGuild) return alert('Please select a server');
+            
+            try {
+                const res = await fetch(`/api/guild/${currentGuild}/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        starboard_channel: channel || null,
+                        starboard_threshold: parseInt(threshold)
+                    })
+                });
+                
+                if (res.ok) {
+                    alert('Starboard settings saved!');
+                } else {
+                    alert('Failed to save settings');
+                }
+            } catch (error) {
+                alert('Error saving settings');
+            }
+        }
+
+        async function saveSettings() {
+            const prefix = document.getElementById('prefix').value;
+            const welcomeChannel = document.getElementById('welcomeChannel').value;
+            const logChannel = document.getElementById('logChannel').value;
+            
+            if (!currentGuild) return alert('Please select a server');
+            
+            try {
+                const res = await fetch(`/api/guild/${currentGuild}/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prefix,
+                        welcome_channel: welcomeChannel || null,
+                        log_channel: logChannel || null
+                    })
+                });
+                
+                if (res.ok) {
+                    alert('Settings saved!');
+                } else {
+                    alert('Failed to save settings');
+                }
+            } catch (error) {
+                alert('Error saving settings');
+            }
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+</html>

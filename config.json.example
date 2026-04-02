@@ -1,0 +1,10 @@
+{
+  "botToken": "YOUR_BOT_TOKEN_HERE",
+  "clientId": "YOUR_CLIENT_ID_HERE",
+  "clientSecret": "YOUR_CLIENT_SECRET_HERE",
+  "callbackURL": "https://phinex-org.github.io/PhineX-Bot/auth/discord/callback",
+  "dashboardURL": "https://phinex-org.github.io/PhineX-Bot",
+  "sessionSecret": "RANDOM_STRING_FOR_SESSION_SECURITY",
+  "port": 3000,
+  "apiURL": "YOUR_BACKEND_SERVER_URL_HERE"
+}
