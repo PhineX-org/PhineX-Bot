@@ -2,14 +2,14 @@
   "name": "phinex-bot",
   "version": "2.0.0",
   "description": "Advanced Discord bot with slash commands, web dashboard, and comprehensive server management",
-  "main": "bot.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node bot.js",
+    "start": "node server.js",
     "bot": "node bot.js",
     "server": "node server.js",
     "dev": "nodemon bot.js",
     "both": "node bot.js & node server.js"
-},
+  },
   "keywords": [
     "discord",
     "bot",
@@ -35,7 +35,7 @@
     "nodemon": "^3.0.2"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.17.0"
   },
   "repository": {
     "type": "git",
