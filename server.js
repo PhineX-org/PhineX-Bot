@@ -113,16 +113,20 @@ app.get('/auth/discord', passport.authenticate('discord'));
 app.get('/auth/discord/callback',
     passport.authenticate('discord', { failureRedirect: '/' }),
     async (req, res) => {
-        // Store session in database
+        // Store session in database (optional)
         const sessionId = crypto.randomBytes(32).toString('hex');
         await db.createSession(
             sessionId,
             req.user.id,
             req.user.accessToken,
             req.user.refreshToken,
-            604800 // 7 days
+            604800
         );
-        res.redirect('https://phinex-org.github.io/PhineX-Bot/dashboard.html');
+        // Force session save before redirect
+        req.session.save((err) => {
+            if (err) console.error('Session save error:', err);
+            res.redirect('https://phinex-org.github.io/PhineX-Bot/dashboard.html');
+        });
     }
 );
 
