@@ -778,7 +778,7 @@ async function checkAuth() {
     document.getElementById('dashboard').style.display = 'flex';
     currentDiscordToken = session.provider_token;
     if (currentDiscordToken) {
-        loadGuilds(currentDiscordToken);
+        loadGuilds();
     } else {
         console.error('No Discord token found');
     }
@@ -786,7 +786,11 @@ async function checkAuth() {
 
 function logout() {
     supabase.auth.signOut().then(() => {
-        window.location.href = 'https://phinex-org.github.io/PhineX-Bot/index.html';
+        currentUser = null;
+        currentGuild = null;
+        guildData = null;
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('authModal').classList.add('active');
     });
 }
 
