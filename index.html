@@ -6,39 +6,42 @@
     <title>PhineX Bot - Advanced Discord Server Management</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    const SUPABASE_URL = 'https://nwgsqaztrggyfthkkpan.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_3W9Yscrc35Hmb9EeFAlfTA_myvjfxUo';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    (function() {
+        const SUPABASE_URL = 'https://nwgsqaztrggyfthkkpan.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_3W9Yscrc35Hmb9EeFAlfTA_myvjfxUo';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    async function signInWithDiscord() {
-    const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'discord',
-        options: { 
-            scopes: 'identify email guilds',
-            redirectTo: window.location.origin + '/dashboard.html'
+        // Attach signInWithDiscord to window so onclick="signInWithDiscord()" works
+        window.signInWithDiscord = async function() {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'discord',
+                options: { 
+                    scopes: 'identify email guilds',
+                    redirectTo: window.location.origin + '/dashboard.html'
+                }
+            });
+            if (error) console.error(error);
+        };
+
+        // Optional: check existing session and redirect
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) window.location.href = '/dashboard.html';
         }
-    });
-    if (error) console.error(error);
-}
+        checkSession();
 
-    // Optional: check existing session and redirect
-    async function checkSession() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) window.location.href = '/dashboard.html';
-    }
-    checkSession();
-
-    // Attach to login button (the one with class "nav-btn")
-    document.querySelector('.nav-btn').onclick = (e) => {
-        e.preventDefault();
-        signInWithDiscord();
-    };
-    // Also for the "Get Started Free" button
-    document.querySelector('.btn-primary')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        signInWithDiscord();
-    });
+        // Also attach event listeners to the login buttons (in case the inline onclick fails)
+        document.querySelector('.nav-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.signInWithDiscord();
+        });
+        document.querySelector('.btn-primary')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.signInWithDiscord();
+        });
+    })();
 </script>
     <style>
         * {
