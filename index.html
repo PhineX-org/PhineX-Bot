@@ -5,6 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PhineX Bot - Advanced Discord Server Management</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const SUPABASE_URL = 'https://nwgsqaztrggyfthkkpan.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_3W9Yscrc35Hmb9EeFAlfTA_myvjfxUo';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function signInWithDiscord() {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: { 
+            scopes: 'identify email guilds',
+            redirectTo: window.location.origin + '/dashboard.html'
+        }
+    });
+    if (error) console.error(error);
+}
+
+    // Optional: check existing session and redirect
+    async function checkSession() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) window.location.href = '/dashboard.html';
+    }
+    checkSession();
+
+    // Attach to login button (the one with class "nav-btn")
+    document.querySelector('.nav-btn').onclick = (e) => {
+        e.preventDefault();
+        signInWithDiscord();
+    };
+    // Also for the "Get Started Free" button
+    document.querySelector('.btn-primary')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        signInWithDiscord();
+    });
+</script>
     <style>
         * {
             margin: 0;
@@ -393,7 +428,7 @@
     <!-- Navigation -->
     <nav>
         <div class="logo">PHINEX</div>
-        <a href="https://phinex-bot-production.up.railway.app/auth/discord" class="nav-btn">Login with Discord</a>
+        <button class="nav-btn" onclick="signInWithDiscord()">Login with Discord</button>
     </nav>
 
     <!-- Hero Section -->
@@ -404,7 +439,7 @@
         </h1>
         <p>Powerful moderation, advanced automation, and stunning management tools - all in one elegant dashboard</p>
         <div class="cta-buttons">
-            <a href="https://phinex-bot-production.up.railway.app/auth/discord" class="btn-primary">Get Started Free</a>
+            <button class="btn-primary" onclick="signInWithDiscord()">Get Started Free</button>
             <a href="#features" class="btn-secondary">Explore Features</a>
         </div>
     </section>
@@ -525,11 +560,11 @@
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2024 PhineX Bot. Built with ❤️ for Discord communities.</p>
+        <p>&copy; 2026 PhineX Bot. Built with ❤️ for Discord communities.</p>
         <div class="footer-links">
-            <a href="/auth/discord">Dashboard</a>
-            <a href="https://discord.gg/yourinvite" target="_blank">Support Server</a>
-            <a href="https://github.com/yourusername/phinex-bot" target="_blank">GitHub</a>
+            <button class="nav-btn" onclick="signInWithDiscord()">Dashboard</button>
+            <a href="https://discord.gg/xBQ3ewVVHk" target="_blank">Support Server</a>
+            <a href="https://github.com/PhineX-org" target="_blank">GitHub</a>
         </div>
     </footer>
 

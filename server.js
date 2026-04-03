@@ -1,33 +1,26 @@
 const express = require('express');
-const session = require('express-session');
-const passport = require('passport');
-const DiscordStrategy = require('passport-discord').Strategy;
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const cors = require('cors');
 const Database = require('./database.js');
-const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+
 const app = express();
 const db = new Database();
+
 // Load config from environment variables (Railway) or config.json (local development)
 let config;
 try {
     if (process.env.BOT_TOKEN) {
-        // Running on Railway or other cloud platform with environment variables
         config = {
             botToken: process.env.BOT_TOKEN,
             clientId: process.env.CLIENT_ID,
             clientSecret: process.env.CLIENT_SECRET,
-            callbackURL: process.env.CALLBACK_URL,
             dashboardURL: process.env.DASHBOARD_URL || 'http://localhost:3000',
-            sessionSecret: process.env.SESSION_SECRET,
             port: process.env.PORT || 3000
         };
         console.log('✓ Server loaded config from environment variables');
     } else {
-        // Running locally with config.json
         config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
         console.log('✓ Server loaded config from config.json');
     }
@@ -55,59 +48,28 @@ app.use(cors(corsOptions));
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname));
 
-// Session configuration
-app.use(session({
-    secret: config.sessionSecret || crypto.randomBytes(32).toString('hex'),
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-        sameSite: 'none',
-        secure: true,
-        httpOnly: true,
-        domain: undefined
-    }
-}));
-
-// Passport configuration
-app.use(passport.initialize());
-app.use(passport.session());
-
-passport.serializeUser((user, done) => {
-    done(null, user);
-});
-
-passport.deserializeUser((obj, done) => {
-    done(null, obj);
-});
-
-passport.use(new DiscordStrategy({
-    clientID: config.clientId,
-    clientSecret: config.clientSecret,
-    callbackURL: config.callbackURL,
-    scope: ['identify', 'guilds']
-}, (accessToken, refreshToken, profile, done) => {
-    profile.accessToken = accessToken;
-    profile.refreshToken = refreshToken;
-    return done(null, profile);
-}));
-
-// Auth middleware
-function authenticateToken(req, res, next) {
+// Auth middleware – verifies Discord token via Discord API
+async function authenticateDiscordToken(req, res, next) {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token provided' });
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Invalid or expired token' });
-        req.user = user;  // Attach user info to request
+    try {
+        const response = await fetch('https://discord.com/api/v10/users/@me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Invalid token');
+        const user = await response.json();
+        req.user = user;
+        req.discordToken = token;
         next();
-    });
+    } catch (err) {
+        res.status(403).json({ error: 'Invalid or expired token' });
+    }
 }
 
-// Routes
+// Routes – serve static HTML files
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -115,37 +77,8 @@ app.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
-// OAuth Routes
-app.get('/auth/discord', passport.authenticate('discord'));
-
-app.get('/auth/discord/callback',
-    passport.authenticate('discord', { failureRedirect: '/' }),
-    async (req, res) => {
-        // Create a JWT containing the user ID and access token (if needed)
-        const token = jwt.sign(
-            { 
-                id: req.user.id,
-                username: req.user.username,
-                avatar: req.user.avatar,
-                accessToken: req.user.accessToken  // optionally store
-            },
-            JWT_SECRET,
-            { expiresIn: '7d' }
-        );
-        // Redirect to GitHub Pages dashboard with token in URL fragment
-        res.redirect(`https://phinex-org.github.io/PhineX-Bot/dashboard.html#token=${token}`);
-    }
-);
-
-app.get('/auth/logout', (req, res) => {
-    req.logout((err) => {
-        if (err) return res.status(500).json({ error: 'Logout failed' });
-        res.redirect('/');
-    });
-});
-
-// API Routes
-app.get('/api/user', authenticateToken, (req, res) => {
+// API Routes (all require valid Discord token)
+app.get('/api/user', authenticateDiscordToken, (req, res) => {
     res.json({
         id: req.user.id,
         username: req.user.username,
@@ -154,26 +87,19 @@ app.get('/api/user', authenticateToken, (req, res) => {
     });
 });
 
-app.get('/api/guilds', authenticateToken, async (req, res) => {
+app.get('/api/guilds', authenticateDiscordToken, async (req, res) => {
     try {
-        // Get user's guilds from Discord API
         const response = await fetch('https://discord.com/api/v10/users/@me/guilds', {
-            headers: {
-                'Authorization': `Bearer ${req.user.accessToken}`
-            }
+            headers: { 'Authorization': `Bearer ${req.discordToken}` }
         });
-
         const guilds = await response.json();
-        
-        // Filter guilds where user has MANAGE_GUILD permission
+
         const managedGuilds = guilds.filter(guild => {
             const permissions = BigInt(guild.permissions);
             return (permissions & BigInt(0x20)) === BigInt(0x20); // MANAGE_GUILD
         });
 
-        // Check which guilds have the bot
         const botGuilds = bot.guilds.cache.map(g => g.id);
-        
         const guildsWithBotStatus = managedGuilds.map(guild => ({
             ...guild,
             hasBot: botGuilds.includes(guild.id),
@@ -187,14 +113,12 @@ app.get('/api/guilds', authenticateToken, async (req, res) => {
     }
 });
 
-app.get('/api/guild/:guildId', authenticateToken, async (req, res) => {
+app.get('/api/guild/:guildId', authenticateDiscordToken, async (req, res) => {
     const { guildId } = req.params;
-    
+
     // Verify user has access to this guild
     const response = await fetch('https://discord.com/api/v10/users/@me/guilds', {
-        headers: {
-            'Authorization': `Bearer ${req.user.accessToken}`
-        }
+        headers: { 'Authorization': `Bearer ${req.discordToken}` }
     });
     const guilds = await response.json();
     const hasAccess = guilds.some(g => g.id === guildId && (BigInt(g.permissions) & BigInt(0x20)) === BigInt(0x20));
@@ -219,7 +143,7 @@ app.get('/api/guild/:guildId', authenticateToken, async (req, res) => {
         })).sort((a, b) => b.position - a.position);
 
         const channels = guild.channels.cache
-            .filter(c => c.type === 0 || c.type === 2) // Text or Voice
+            .filter(c => c.type === 0 || c.type === 2)
             .map(c => ({
                 id: c.id,
                 name: c.name,
@@ -245,10 +169,9 @@ app.get('/api/guild/:guildId', authenticateToken, async (req, res) => {
     }
 });
 
-app.post('/api/guild/:guildId/settings', authenticateToken, async (req, res) => {
+app.post('/api/guild/:guildId/settings', authenticateDiscordToken, async (req, res) => {
     const { guildId } = req.params;
     const settings = req.body;
-
     try {
         await db.updateGuildSettings(guildId, settings);
         res.json({ success: true });
@@ -258,10 +181,9 @@ app.post('/api/guild/:guildId/settings', authenticateToken, async (req, res) => 
     }
 });
 
-app.post('/api/guild/:guildId/role/create', authenticateToken, async (req, res) => {
+app.post('/api/guild/:guildId/role/create', authenticateDiscordToken, async (req, res) => {
     const { guildId } = req.params;
     const { name, color, permissions } = req.body;
-
     try {
         const guild = bot.guilds.cache.get(guildId);
         const role = await guild.roles.create({
@@ -269,7 +191,6 @@ app.post('/api/guild/:guildId/role/create', authenticateToken, async (req, res) 
             color: color || '#99AAB5',
             permissions: permissions || []
         });
-
         res.json({ success: true, role: { id: role.id, name: role.name, color: role.hexColor } });
     } catch (error) {
         console.error('Error creating role:', error);
@@ -277,17 +198,12 @@ app.post('/api/guild/:guildId/role/create', authenticateToken, async (req, res) 
     }
 });
 
-app.delete('/api/guild/:guildId/role/:roleId', authenticateToken, async (req, res) => {
+app.delete('/api/guild/:guildId/role/:roleId', authenticateDiscordToken, async (req, res) => {
     const { guildId, roleId } = req.params;
-
     try {
         const guild = bot.guilds.cache.get(guildId);
         const role = guild.roles.cache.get(roleId);
-        
-        if (!role) {
-            return res.status(404).json({ error: 'Role not found' });
-        }
-
+        if (!role) return res.status(404).json({ error: 'Role not found' });
         await role.delete();
         res.json({ success: true });
     } catch (error) {
@@ -296,17 +212,15 @@ app.delete('/api/guild/:guildId/role/:roleId', authenticateToken, async (req, re
     }
 });
 
-app.post('/api/guild/:guildId/channel/create', authenticateToken, async (req, res) => {
+app.post('/api/guild/:guildId/channel/create', authenticateDiscordToken, async (req, res) => {
     const { guildId } = req.params;
     const { name, type } = req.body;
-
     try {
         const guild = bot.guilds.cache.get(guildId);
         const channel = await guild.channels.create({
             name,
             type: type === 'voice' ? 2 : 0
         });
-
         res.json({ success: true, channel: { id: channel.id, name: channel.name, type: channel.type } });
     } catch (error) {
         console.error('Error creating channel:', error);
@@ -314,17 +228,12 @@ app.post('/api/guild/:guildId/channel/create', authenticateToken, async (req, re
     }
 });
 
-app.delete('/api/guild/:guildId/channel/:channelId', authenticateToken, async (req, res) => {
+app.delete('/api/guild/:guildId/channel/:channelId', authenticateDiscordToken, async (req, res) => {
     const { guildId, channelId } = req.params;
-
     try {
         const guild = bot.guilds.cache.get(guildId);
         const channel = guild.channels.cache.get(channelId);
-        
-        if (!channel) {
-            return res.status(404).json({ error: 'Channel not found' });
-        }
-
+        if (!channel) return res.status(404).json({ error: 'Channel not found' });
         await channel.delete();
         res.json({ success: true });
     } catch (error) {
@@ -333,15 +242,13 @@ app.delete('/api/guild/:guildId/channel/:channelId', authenticateToken, async (r
     }
 });
 
-app.post('/api/guild/:guildId/member/:userId/ban', authenticateToken, async (req, res) => {
+app.post('/api/guild/:guildId/member/:userId/ban', authenticateDiscordToken, async (req, res) => {
     const { guildId, userId } = req.params;
     const { reason } = req.body;
-
     try {
         const guild = bot.guilds.cache.get(guildId);
         await guild.members.ban(userId, { reason: reason || 'No reason provided' });
         await db.logModeration(guildId, userId, 'ban', req.user.id, reason);
-        
         res.json({ success: true });
     } catch (error) {
         console.error('Error banning user:', error);
@@ -349,16 +256,14 @@ app.post('/api/guild/:guildId/member/:userId/ban', authenticateToken, async (req
     }
 });
 
-app.post('/api/guild/:guildId/member/:userId/kick', authenticateToken, async (req, res) => {
+app.post('/api/guild/:guildId/member/:userId/kick', authenticateDiscordToken, async (req, res) => {
     const { guildId, userId } = req.params;
     const { reason } = req.body;
-
     try {
         const guild = bot.guilds.cache.get(guildId);
         const member = await guild.members.fetch(userId);
         await member.kick(reason || 'No reason provided');
         await db.logModeration(guildId, userId, 'kick', req.user.id, reason);
-        
         res.json({ success: true });
     } catch (error) {
         console.error('Error kicking user:', error);
@@ -366,14 +271,12 @@ app.post('/api/guild/:guildId/member/:userId/kick', authenticateToken, async (re
     }
 });
 
-app.post('/api/guild/:guildId/member/:userId/warn', authenticateToken, async (req, res) => {
+app.post('/api/guild/:guildId/member/:userId/warn', authenticateDiscordToken, async (req, res) => {
     const { guildId, userId } = req.params;
     const { reason } = req.body;
-
     try {
         await db.addWarning(guildId, userId, req.user.id, reason || 'No reason provided');
         const warnings = await db.getWarnings(guildId, userId);
-        
         res.json({ success: true, warnings: warnings.length });
     } catch (error) {
         console.error('Error warning user:', error);
@@ -381,9 +284,8 @@ app.post('/api/guild/:guildId/member/:userId/warn', authenticateToken, async (re
     }
 });
 
-app.get('/api/guild/:guildId/warnings/:userId', authenticateToken, async (req, res) => {
+app.get('/api/guild/:guildId/warnings/:userId', authenticateDiscordToken, async (req, res) => {
     const { guildId, userId } = req.params;
-
     try {
         const warnings = await db.getWarnings(guildId, userId);
         res.json({ warnings });
@@ -393,10 +295,9 @@ app.get('/api/guild/:guildId/warnings/:userId', authenticateToken, async (req, r
     }
 });
 
-app.get('/api/guild/:guildId/logs', authenticateToken, async (req, res) => {
+app.get('/api/guild/:guildId/logs', authenticateDiscordToken, async (req, res) => {
     const { guildId } = req.params;
     const limit = parseInt(req.query.limit) || 50;
-
     try {
         const logs = await db.getModerationLogs(guildId, limit);
         res.json({ logs });
@@ -406,11 +307,9 @@ app.get('/api/guild/:guildId/logs', authenticateToken, async (req, res) => {
     }
 });
 
-// Social Links API
-app.post('/api/guild/:guildId/social', authenticateToken, async (req, res) => {
+app.post('/api/guild/:guildId/social', authenticateDiscordToken, async (req, res) => {
     const { guildId } = req.params;
     const socialLinks = req.body;
-
     try {
         await db.updateGuildSettings(guildId, {
             social_links: JSON.stringify(socialLinks)
@@ -422,9 +321,8 @@ app.post('/api/guild/:guildId/social', authenticateToken, async (req, res) => {
     }
 });
 
-app.get('/api/guild/:guildId/social', authenticateToken, async (req, res) => {
+app.get('/api/guild/:guildId/social', authenticateDiscordToken, async (req, res) => {
     const { guildId } = req.params;
-
     try {
         const settings = await db.getGuildSettings(guildId);
         const socialLinks = settings && settings.social_links ? JSON.parse(settings.social_links) : {};
@@ -440,5 +338,4 @@ const PORT = config.port || 3000;
 app.listen(PORT, () => {
     console.log(`🌐 Dashboard server running on http://localhost:${PORT}`);
     console.log(`🔗 Frontend URL: ${config.dashboardURL}`);
-    console.log(`🔐 OAuth Callback: ${config.callbackURL}`);
 });

@@ -5,6 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PhineX Dashboard - Server Control Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght:400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const SUPABASE_URL = 'https://nwgsqaztrggyfthkkpan.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_3W9Yscrc35Hmb9EeFAlfTA_myvjfxUo';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function signInWithDiscord() {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: { 
+            scopes: 'identify email guilds',  // ✅ Add guilds here
+            redirectTo: window.location.origin + '/dashboard.html'
+        }
+    });
+    if (error) console.error(error);
+}
+
+    // Optional: check existing session and redirect
+    async function checkSession() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) window.location.href = '/dashboard.html';
+    }
+    checkSession();
+
+    // Attach to login button (the one with class "nav-btn")
+    document.querySelector('.nav-btn').onclick = (e) => {
+        e.preventDefault();
+        signInWithDiscord();
+    };
+    // Also for the "Get Started Free" button
+    document.querySelector('.btn-primary')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        signInWithDiscord();
+    });
+</script>
     <style>
         * {
             margin: 0;
@@ -473,7 +508,7 @@
         <div class="modal-content">
             <h2 class="modal-title">🔒 Authentication Required</h2>
             <p class="modal-text">Please login with Discord to access the dashboard</p>
-            <button class="modal-btn" onclick="window.location.href=`${API_BASE}/auth/discord`">Login with Discord</button>
+            <button class="modal-btn" onclick="signInWithDiscord()">Login with Discord</button>
         </div>
     </div>
 
@@ -718,40 +753,49 @@
     </div>
 
     <script>
-        const API_BASE = 'https://phinex-bot-production.up.railway.app';
-        let currentGuild = null;
-        let userData = null;
-        let guildData = null;
 
-        // Check authentication
-        async function checkAuth() {
-            try {
-                const res = await fetch(`${API_BASE}/api/user`);
-                if (res.ok) {
-                    userData = await res.json();
-                    document.getElementById('username').textContent = userData.username;
-                    document.getElementById('userAvatar').src = `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`;
-                    document.getElementById('authModal').classList.remove('active');
-                    document.getElementById('dashboard').style.display = 'flex';
-                    loadGuilds();
-                } else {
-                    document.getElementById('authModal').classList.add('active');
-                }
-            } catch (error) {
-                document.getElementById('authModal').classList.add('active');
-            }
-        }
+let currentUser = null;
+let currentGuild = null;
+let guildData = null;
 
-        function logout() {
-        localStorage.removeItem('phinex_token');
-        window.location.href = 'https://phinex-org.github.io/PhineX-Bot/index.html';
+const API_BASE = 'https://phinex-bot-production.up.railway.app';
+let currentDiscordToken = null;
+
+// Check authentication
+async function checkAuth() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        document.getElementById('authModal').classList.add('active');
+        document.getElementById('dashboard').style.display = 'none';
+        return;
     }
+    currentUser = session.user;
+    document.getElementById('username').textContent = currentUser.user_metadata.full_name || currentUser.email;
+    const avatarUrl = currentUser.user_metadata.avatar_url || `https://cdn.discordapp.com/embed/avatars/0.png`;
+    document.getElementById('userAvatar').src = avatarUrl;
+    document.getElementById('authModal').classList.remove('active');
+    document.getElementById('dashboard').style.display = 'flex';
+    currentDiscordToken = session.provider_token;
+    if (currentDiscordToken) {
+        loadGuilds(currentDiscordToken);
+    } else {
+        console.error('No Discord token found');
+    }
+}
+
+function logout() {
+    supabase.auth.signOut().then(() => {
+        window.location.href = 'https://phinex-org.github.io/PhineX-Bot/index.html';
+    });
+}
 
         // Load guilds
-        async function loadGuilds() {
-            try {
-                const res = await fetch(`${API_BASE}/api/guilds`);
-                const guilds = await res.json();
+        async function loadGuilds(discordToken) {
+        try {
+            const res = await fetch(`${API_BASE}/api/guilds`, {
+                headers: { 'Authorization': `Bearer ${currentDiscordToken}` }
+            });
+            const guilds = await res.json();
                 
                 const serverSelect = document.getElementById('serverSelect');
                 serverSelect.innerHTML = '<option value="">Select a server...</option>';
@@ -784,7 +828,9 @@
         async function loadGuild(guildId) {
             currentGuild = guildId;
             try {
-                const res = await fetch(`${API_BASE}/api/guild/${guildId}`);
+                const res = await fetch(`${API_BASE}/api/guild/${guildId}`, {
+                    headers: { 'Authorization': `Bearer ${currentDiscordToken}` }
+                });
                 guildData = await res.json();
                 
                 // Update stats
@@ -881,7 +927,7 @@
             try {
                 const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/member/${userId}/ban`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentDiscordToken}` },
                     body: JSON.stringify({ reason })
                 });
                 
@@ -906,7 +952,7 @@
             try {
                 const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/member/${userId}/kick`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentDiscordToken}` },
                     body: JSON.stringify({ reason })
                 });
                 
@@ -931,7 +977,7 @@
             try {
                 const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/member/${userId}/warn`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentDiscordToken}` },
                     body: JSON.stringify({ reason })
                 });
                 
@@ -958,7 +1004,7 @@
             try {
                 const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/role/create`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentDiscordToken}` },
                     body: JSON.stringify({ name, color })
                 });
                 
@@ -979,7 +1025,8 @@
             
             try {
                 const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/role/${roleId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${currentDiscordToken}` }
                 });
                 
                 if (res.ok) {
@@ -1003,7 +1050,7 @@
             try {
                 const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/channel/create`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentDiscordToken}` },
                     body: JSON.stringify({ name, type })
                 });
                 
@@ -1024,7 +1071,8 @@
             
             try {
                 const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/channel/${channelId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${currentDiscordToken}` }
                 });
                 
                 if (res.ok) {
@@ -1048,7 +1096,7 @@
             try {
                 const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/settings`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentDiscordToken}` },
                     body: JSON.stringify({
                         starboard_channel: channel || null,
                         starboard_threshold: parseInt(threshold)
@@ -1075,7 +1123,7 @@
             try {
                 const res = await fetch(`${API_BASE}/api/guild/${currentGuild}/settings`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentDiscordToken}` },
                     body: JSON.stringify({
                         prefix,
                         welcome_channel: welcomeChannel || null,

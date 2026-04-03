@@ -2,402 +2,445 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 class Database {
-    constructor() {
-        this.db = new sqlite3.Database(path.join(__dirname, 'phinex.db'), (err) => {
+    constructor(dbPath = 'phinex-bot.db') {
+        this.db = new sqlite3.Database(dbPath, (err) => {
             if (err) {
-                console.error('❌ Database connection error:', err);
+                console.error('Error opening database:', err);
             } else {
-                console.log('✅ Connected to SQLite database');
-                this.initialize();
+                console.log('✓ Connected to SQLite database');
+                this.initTables();
             }
         });
     }
 
-    initialize() {
-        this.db.serialize(() => {
-            // Guild Settings Table (updated with new fields)
-            this.db.run(`CREATE TABLE IF NOT EXISTS guild_settings (
+    initTables() {
+        // Guild settings table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS guild_settings (
                 guild_id TEXT PRIMARY KEY,
-                prefix TEXT DEFAULT '!',
-                starboard_channel TEXT,
-                starboard_threshold INTEGER DEFAULT 3,
-                starboard_emoji TEXT DEFAULT '⭐',
                 welcome_channel TEXT,
                 welcome_message TEXT,
-                log_channel TEXT,
-                auto_role TEXT,
                 suggestions_channel TEXT,
-                social_links TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`);
+                starboard_channel TEXT,
+                starboard_emoji TEXT DEFAULT '⭐',
+                starboard_threshold INTEGER DEFAULT 3
+            )
+        `);
 
-            // Warnings Table
-            this.db.run(`CREATE TABLE IF NOT EXISTS warnings (
+        // Role menus table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS role_menus (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id TEXT NOT NULL,
+                channel_id TEXT NOT NULL,
+                message_id TEXT NOT NULL,
+                title TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Role menu roles table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS role_menu_roles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message_id TEXT NOT NULL,
+                emoji TEXT NOT NULL,
+                role_id TEXT NOT NULL,
+                description TEXT
+            )
+        `);
+
+        // Warnings table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS warnings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 guild_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
-                moderator_id TEXT NOT NULL,
-                reason TEXT NOT NULL,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`);
-
-            // Moderation Logs Table
-            this.db.run(`CREATE TABLE IF NOT EXISTS moderation_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                guild_id TEXT NOT NULL,
-                user_id TEXT NOT NULL,
-                action TEXT NOT NULL,
                 moderator_id TEXT NOT NULL,
                 reason TEXT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`);
-
-            // Giveaways Table
-            this.db.run(`CREATE TABLE IF NOT EXISTS giveaways (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                guild_id TEXT NOT NULL,
-                message_id TEXT NOT NULL,
-                channel_id TEXT NOT NULL,
-                prize TEXT NOT NULL,
-                winners INTEGER DEFAULT 1,
-                end_time DATETIME NOT NULL,
-                ended BOOLEAN DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`);
+            )
+        `);
 
-            // Starboard Messages Table
-            this.db.run(`CREATE TABLE IF NOT EXISTS starboard_messages (
-                original_message_id TEXT PRIMARY KEY,
+        // Starboard messages table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS starboard_messages (
+                message_id TEXT PRIMARY KEY,
                 starboard_message_id TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`);
+            )
+        `);
 
-            // Role Menus Table (NEW)
-            this.db.run(`CREATE TABLE IF NOT EXISTS role_menus (
+        // Social links table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS social_links (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 guild_id TEXT NOT NULL,
-                message_id TEXT NOT NULL UNIQUE,
+                platform TEXT NOT NULL,
+                link TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(guild_id, platform)
+            )
+        `);
+
+        // Quiz settings table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS quiz_settings (
+                guild_id TEXT PRIMARY KEY,
                 channel_id TEXT NOT NULL,
-                title TEXT NOT NULL,
+                start_message TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`);
+            )
+        `);
 
-            // Role Menu Roles Table (NEW)
-            this.db.run(`CREATE TABLE IF NOT EXISTS role_menu_roles (
+        // Quiz questions table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS quiz_questions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id TEXT NOT NULL,
                 message_id TEXT NOT NULL,
-                role_id TEXT NOT NULL,
-                emoji TEXT NOT NULL,
-                description TEXT,
+                question TEXT NOT NULL,
+                options TEXT NOT NULL,
+                correct_answer INTEGER NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`);
+            )
+        `);
 
-            // User Sessions for Dashboard
-            this.db.run(`CREATE TABLE IF NOT EXISTS user_sessions (
-                session_id TEXT PRIMARY KEY,
+        // Quiz scores table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS quiz_scores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
-                access_token TEXT NOT NULL,
-                refresh_token TEXT NOT NULL,
-                expires_at DATETIME NOT NULL,
+                correct_answers INTEGER DEFAULT 0,
+                total_answers INTEGER DEFAULT 0,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(guild_id, user_id)
+            )
+        `);
+
+        // Ticket settings table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS ticket_settings (
+                guild_id TEXT PRIMARY KEY,
+                channel_id TEXT NOT NULL,
+                support_role_id TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`);
+            )
+        `);
 
-            console.log('✅ Database tables initialized');
-        });
+        // Tickets table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS tickets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                channel_id TEXT NOT NULL,
+                status TEXT DEFAULT 'open',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                closed_at DATETIME
+            )
+        `);
+
+        // Community tickets table
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS community_tickets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                code TEXT NOT NULL UNIQUE,
+                used INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        console.log('✓ Database tables initialized');
     }
 
-    // Guild Settings Methods
-    getGuildSettings(guildId) {
+    // Promisify database operations
+    run(sql, params = []) {
         return new Promise((resolve, reject) => {
-            this.db.get('SELECT * FROM guild_settings WHERE guild_id = ?', [guildId], (err, row) => {
-                if (err) reject(err);
-                else resolve(row || null);
+            this.db.run(sql, params, function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve({ lastID: this.lastID, changes: this.changes });
+                }
             });
         });
     }
 
-    updateGuildSettings(guildId, settings) {
+    get(sql, params = []) {
         return new Promise((resolve, reject) => {
-            const keys = Object.keys(settings);
-            const values = Object.values(settings);
-            const setClause = keys.map(key => `${key} = ?`).join(', ');
-
-            this.db.run(
-                `INSERT INTO guild_settings (guild_id, ${keys.join(', ')}) 
-                 VALUES (?, ${keys.map(() => '?').join(', ')})
-                 ON CONFLICT(guild_id) DO UPDATE SET ${setClause}, updated_at = CURRENT_TIMESTAMP`,
-                [guildId, ...values, ...values],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.changes);
+            this.db.get(sql, params, (err, row) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(row);
                 }
-            );
-        });
-    }
-
-    // Warning Methods
-    addWarning(guildId, userId, moderatorId, reason) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'INSERT INTO warnings (guild_id, user_id, moderator_id, reason) VALUES (?, ?, ?, ?)',
-                [guildId, userId, moderatorId, reason],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.lastID);
-                }
-            );
-        });
-    }
-
-    getWarnings(guildId, userId) {
-        return new Promise((resolve, reject) => {
-            this.db.all(
-                'SELECT * FROM warnings WHERE guild_id = ? AND user_id = ? ORDER BY timestamp DESC',
-                [guildId, userId],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows || []);
-                }
-            );
-        });
-    }
-
-    clearWarnings(guildId, userId) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'DELETE FROM warnings WHERE guild_id = ? AND user_id = ?',
-                [guildId, userId],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.changes);
-                }
-            );
-        });
-    }
-
-    // Moderation Logs
-    logModeration(guildId, userId, action, moderatorId, reason) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'INSERT INTO moderation_logs (guild_id, user_id, action, moderator_id, reason) VALUES (?, ?, ?, ?, ?)',
-                [guildId, userId, action, moderatorId, reason],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.lastID);
-                }
-            );
-        });
-    }
-
-    getModerationLogs(guildId, limit = 50) {
-        return new Promise((resolve, reject) => {
-            this.db.all(
-                'SELECT * FROM moderation_logs WHERE guild_id = ? ORDER BY timestamp DESC LIMIT ?',
-                [guildId, limit],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows || []);
-                }
-            );
-        });
-    }
-
-    // Giveaway Methods
-    createGiveaway(guildId, messageId, channelId, prize, winners, endTime) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'INSERT INTO giveaways (guild_id, message_id, channel_id, prize, winners, end_time) VALUES (?, ?, ?, ?, ?, ?)',
-                [guildId, messageId, channelId, prize, winners, new Date(endTime).toISOString()],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.lastID);
-                }
-            );
-        });
-    }
-
-    getGiveaway(messageId) {
-        return new Promise((resolve, reject) => {
-            this.db.get('SELECT * FROM giveaways WHERE message_id = ?', [messageId], (err, row) => {
-                if (err) reject(err);
-                else resolve(row || null);
             });
         });
     }
 
-    endGiveaway(messageId) {
+    all(sql, params = []) {
         return new Promise((resolve, reject) => {
-            this.db.run(
-                'UPDATE giveaways SET ended = 1 WHERE message_id = ?',
-                [messageId],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.changes);
+            this.db.all(sql, params, (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows);
                 }
-            );
-        });
-    }
-
-    // Starboard Methods
-    addStarboardMessage(originalMessageId, starboardMessageId) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'INSERT INTO starboard_messages (original_message_id, starboard_message_id) VALUES (?, ?)',
-                [originalMessageId, starboardMessageId],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.lastID);
-                }
-            );
-        });
-    }
-
-    getStarboardMessage(originalMessageId) {
-        return new Promise((resolve, reject) => {
-            this.db.get(
-                'SELECT * FROM starboard_messages WHERE original_message_id = ?',
-                [originalMessageId],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row || null);
-                }
-            );
-        });
-    }
-
-    // Role Menu Methods
-    createRoleMenu(guildId, messageId, channelId, title) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'INSERT INTO role_menus (guild_id, message_id, channel_id, title) VALUES (?, ?, ?, ?)',
-                [guildId, messageId, channelId, title],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.lastID);
-                }
-            );
-        });
-    }
-
-    getLastRoleMenu(guildId) {
-        return new Promise((resolve, reject) => {
-            this.db.get(
-                'SELECT * FROM role_menus WHERE guild_id = ? ORDER BY created_at DESC LIMIT 1',
-                [guildId],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row || null);
-                }
-            );
-        });
-    }
-
-    getRoleMenuByMessage(messageId) {
-        return new Promise((resolve, reject) => {
-            this.db.get(
-                'SELECT * FROM role_menus WHERE message_id = ?',
-                [messageId],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row || null);
-                }
-            );
-        });
-    }
-
-    getRoleMenus(guildId) {
-        return new Promise((resolve, reject) => {
-            this.db.all(
-                'SELECT * FROM role_menus WHERE guild_id = ? ORDER BY created_at DESC',
-                [guildId],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows || []);
-                }
-            );
-        });
-    }
-
-    addRoleMenuRole(messageId, roleId, emoji, description) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'INSERT INTO role_menu_roles (message_id, role_id, emoji, description) VALUES (?, ?, ?, ?)',
-                [messageId, roleId, emoji, description],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.lastID);
-                }
-            );
-        });
-    }
-
-    getRoleMenuRole(messageId, emoji) {
-        return new Promise((resolve, reject) => {
-            this.db.get(
-                'SELECT * FROM role_menu_roles WHERE message_id = ? AND emoji = ?',
-                [messageId, emoji],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row || null);
-                }
-            );
-        });
-    }
-
-    getRoleMenuRoles(messageId) {
-        return new Promise((resolve, reject) => {
-            this.db.all(
-                'SELECT * FROM role_menu_roles WHERE message_id = ?',
-                [messageId],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows || []);
-                }
-            );
-        });
-    }
-
-    // Session Methods for Dashboard
-    createSession(sessionId, userId, accessToken, refreshToken, expiresIn) {
-        return new Promise((resolve, reject) => {
-            const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
-            this.db.run(
-                'INSERT INTO user_sessions (session_id, user_id, access_token, refresh_token, expires_at) VALUES (?, ?, ?, ?, ?)',
-                [sessionId, userId, accessToken, refreshToken, expiresAt],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.lastID);
-                }
-            );
-        });
-    }
-
-    getSession(sessionId) {
-        return new Promise((resolve, reject) => {
-            this.db.get('SELECT * FROM user_sessions WHERE session_id = ?', [sessionId], (err, row) => {
-                if (err) reject(err);
-                else resolve(row || null);
             });
         });
     }
 
-    deleteSession(sessionId) {
-        return new Promise((resolve, reject) => {
-            this.db.run('DELETE FROM user_sessions WHERE session_id = ?', [sessionId], function(err) {
-                if (err) reject(err);
-                else resolve(this.changes);
-            });
-        });
+    // Guild settings methods
+    async getGuildSettings(guildId) {
+        return this.get('SELECT * FROM guild_settings WHERE guild_id = ?', [guildId]);
     }
 
+    async setWelcomeChannel(guildId, channelId, message) {
+        return this.run(
+            'INSERT OR REPLACE INTO guild_settings (guild_id, welcome_channel, welcome_message) VALUES (?, ?, ?)',
+            [guildId, channelId, message]
+        );
+    }
+
+    async setSuggestionsChannel(guildId, channelId) {
+        return this.run(
+            'INSERT OR REPLACE INTO guild_settings (guild_id, suggestions_channel) VALUES (?, ?)',
+            [guildId, channelId]
+        );
+    }
+
+    // Role menu methods
+    async createRoleMenu(guildId, channelId, messageId, title) {
+        return this.run(
+            'INSERT INTO role_menus (guild_id, channel_id, message_id, title) VALUES (?, ?, ?, ?)',
+            [guildId, channelId, messageId, title]
+        );
+    }
+
+    async getRoleMenuByMessage(messageId) {
+        return this.get('SELECT * FROM role_menus WHERE message_id = ?', [messageId]);
+    }
+
+    async getLastRoleMenu(guildId) {
+        return this.get(
+            'SELECT * FROM role_menus WHERE guild_id = ? ORDER BY created_at DESC LIMIT 1',
+            [guildId]
+        );
+    }
+
+    async addRoleMenuRole(messageId, emoji, roleId, description = '') {
+        return this.run(
+            'INSERT INTO role_menu_roles (message_id, emoji, role_id, description) VALUES (?, ?, ?, ?)',
+            [messageId, emoji, roleId, description]
+        );
+    }
+
+    async getRoleMenuRole(messageId, emoji) {
+        return this.get(
+            'SELECT * FROM role_menu_roles WHERE message_id = ? AND emoji = ?',
+            [messageId, emoji]
+        );
+    }
+
+    async getRoleMenuRoles(messageId) {
+        return this.all('SELECT * FROM role_menu_roles WHERE message_id = ?', [messageId]);
+    }
+
+    // Warnings methods
+    async addWarning(guildId, userId, moderatorId, reason) {
+        return this.run(
+            'INSERT INTO warnings (guild_id, user_id, moderator_id, reason) VALUES (?, ?, ?, ?)',
+            [guildId, userId, moderatorId, reason]
+        );
+    }
+
+    async getWarnings(guildId, userId) {
+        return this.all(
+            'SELECT * FROM warnings WHERE guild_id = ? AND user_id = ? ORDER BY created_at DESC',
+            [guildId, userId]
+        );
+    }
+
+    async getWarningCount(guildId, userId) {
+        const result = await this.get(
+            'SELECT COUNT(*) as count FROM warnings WHERE guild_id = ? AND user_id = ?',
+            [guildId, userId]
+        );
+        return result ? result.count : 0;
+    }
+
+    // Starboard methods
+    async addStarboardMessage(messageId, starboardMessageId) {
+        return this.run(
+            'INSERT INTO starboard_messages (message_id, starboard_message_id) VALUES (?, ?)',
+            [messageId, starboardMessageId]
+        );
+    }
+
+    async getStarboardMessage(messageId) {
+        return this.get('SELECT * FROM starboard_messages WHERE message_id = ?', [messageId]);
+    }
+
+    // Social links methods
+    async addSocialLink(guildId, platform, link) {
+        return this.run(
+            'INSERT OR REPLACE INTO social_links (guild_id, platform, link) VALUES (?, ?, ?)',
+            [guildId, platform, link]
+        );
+    }
+
+    async getSocialLinks(guildId) {
+        return this.all('SELECT * FROM social_links WHERE guild_id = ?', [guildId]);
+    }
+
+    async removeSocialLink(guildId, platform) {
+        return this.run(
+            'DELETE FROM social_links WHERE guild_id = ? AND platform = ?',
+            [guildId, platform]
+        );
+    }
+
+    // Quiz methods
+    async setQuizSettings(guildId, channelId, startMessage) {
+        return this.run(
+            'INSERT OR REPLACE INTO quiz_settings (guild_id, channel_id, start_message) VALUES (?, ?, ?)',
+            [guildId, channelId, startMessage]
+        );
+    }
+
+    async getQuizSettings(guildId) {
+        return this.get('SELECT * FROM quiz_settings WHERE guild_id = ?', [guildId]);
+    }
+
+    async addQuizQuestion(guildId, messageId, question, options, correctAnswer) {
+        return this.run(
+            'INSERT INTO quiz_questions (guild_id, message_id, question, options, correct_answer) VALUES (?, ?, ?, ?, ?)',
+            [guildId, messageId, question, options, correctAnswer]
+        );
+    }
+
+    async getQuizQuestion(messageId) {
+        return this.get('SELECT * FROM quiz_questions WHERE message_id = ?', [messageId]);
+    }
+
+    async updateQuizScore(guildId, userId, correct) {
+        const existing = await this.get(
+            'SELECT * FROM quiz_scores WHERE guild_id = ? AND user_id = ?',
+            [guildId, userId]
+        );
+
+        if (existing) {
+            return this.run(
+                'UPDATE quiz_scores SET correct_answers = correct_answers + ?, total_answers = total_answers + 1, updated_at = CURRENT_TIMESTAMP WHERE guild_id = ? AND user_id = ?',
+                [correct ? 1 : 0, guildId, userId]
+            );
+        } else {
+            return this.run(
+                'INSERT INTO quiz_scores (guild_id, user_id, correct_answers, total_answers) VALUES (?, ?, ?, 1)',
+                [guildId, userId, correct ? 1 : 0]
+            );
+        }
+    }
+
+    async getQuizLeaderboard(guildId, limit = 10) {
+        return this.all(
+            'SELECT * FROM quiz_scores WHERE guild_id = ? ORDER BY correct_answers DESC, total_answers ASC LIMIT ?',
+            [guildId, limit]
+        );
+    }
+
+    // Ticket methods
+    async setTicketSettings(guildId, channelId, supportRoleId) {
+        return this.run(
+            'INSERT OR REPLACE INTO ticket_settings (guild_id, channel_id, support_role_id) VALUES (?, ?, ?)',
+            [guildId, channelId, supportRoleId]
+        );
+    }
+
+    async getTicketSettings(guildId) {
+        return this.get('SELECT * FROM ticket_settings WHERE guild_id = ?', [guildId]);
+    }
+
+    async createTicket(guildId, userId, channelId) {
+        return this.run(
+            'INSERT INTO tickets (guild_id, user_id, channel_id, status) VALUES (?, ?, ?, ?)',
+            [guildId, userId, channelId, 'open']
+        );
+    }
+
+    async getOpenTicket(guildId, userId) {
+        return this.get(
+            'SELECT * FROM tickets WHERE guild_id = ? AND user_id = ? AND status = ?',
+            [guildId, userId, 'open']
+        );
+    }
+
+    async getTicketByChannel(channelId) {
+        return this.get('SELECT * FROM tickets WHERE channel_id = ?', [channelId]);
+    }
+
+    async closeTicket(channelId) {
+        return this.run(
+            'UPDATE tickets SET status = ?, closed_at = CURRENT_TIMESTAMP WHERE channel_id = ?',
+            ['closed', channelId]
+        );
+    }
+
+    async getTicketStats(guildId) {
+        const total = await this.get(
+            'SELECT COUNT(*) as count FROM tickets WHERE guild_id = ?',
+            [guildId]
+        );
+        const open = await this.get(
+            'SELECT COUNT(*) as count FROM tickets WHERE guild_id = ? AND status = ?',
+            [guildId, 'open']
+        );
+        const closed = await this.get(
+            'SELECT COUNT(*) as count FROM tickets WHERE guild_id = ? AND status = ?',
+            [guildId, 'closed']
+        );
+
+        return {
+            total: total ? total.count : 0,
+            open: open ? open.count : 0,
+            closed: closed ? closed.count : 0
+        };
+    }
+
+    // Community tickets methods
+    async createCommunityTicket(guildId, userId, code) {
+        return this.run(
+            'INSERT INTO community_tickets (guild_id, user_id, code) VALUES (?, ?, ?)',
+            [guildId, userId, code]
+        );
+    }
+
+    async getCommunityTicket(code) {
+        return this.get('SELECT * FROM community_tickets WHERE code = ?', [code]);
+    }
+
+    async useCommunityTicket(code) {
+        return this.run(
+            'UPDATE community_tickets SET used = 1 WHERE code = ?',
+            [code]
+        );
+    }
+
+    // Close database connection
     close() {
-        this.db.close((err) => {
-            if (err) {
-                console.error('❌ Error closing database:', err);
-            } else {
-                console.log('✅ Database connection closed');
-            }
+        return new Promise((resolve, reject) => {
+            this.db.close((err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    console.log('✓ Database connection closed');
+                    resolve();
+                }
+            });
         });
     }
 }
