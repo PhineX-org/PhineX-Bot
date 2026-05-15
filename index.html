@@ -1,585 +1,1016 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PhineX Bot - Advanced Discord Server Management</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-    (function() {
-        const SUPABASE_URL = 'https://nwgsqaztrggyfthkkpan.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_3W9Yscrc35Hmb9EeFAlfTA_myvjfxUo';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhineX Bot — Advanced Discord Management</title>
+  <meta name="description" content="PhineX is an advanced Discord bot with moderation, ticketing, community features, starboard, giveaways, and a full web dashboard.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #07080d;
+      --bg2:       #0d0f18;
+      --bg3:       #131620;
+      --card:      #0f1119;
+      --border:    #1c1f2e;
+      --border2:   #252840;
+      --accent:    #2de08a;
+      --accent2:   #1aab67;
+      --accent3:   #0d6b43;
+      --accentDim: rgba(45,224,138,0.08);
+      --accentGlow:rgba(45,224,138,0.18);
+      --text:      #e4e7f0;
+      --text2:     #8b90a8;
+      --text3:     #555a72;
+      --red:       #f04747;
+      --gold:      #faa61a;
+      --r:         12px;
+    }
 
-        window.signInWithDiscord = async function() {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'discord',
-                options: { 
-                    scopes: 'identify email guilds',
-                    redirectTo: 'https://phinex-org.github.io/PhineX-Bot/auth.html'
-                }
-            });
-            if (error) console.error(error);
-        };
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
 
-        async function checkSession() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) window.location.href = 'https://phinex-org.github.io/PhineX-Bot/dashboard.html';
-        }
-        checkSession();
+    /* ─── GRID BG ─────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(45,224,138,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45,224,138,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-        document.querySelector('.nav-btn')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.signInWithDiscord();
-        });
-        document.querySelector('.btn-primary')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.signInWithDiscord();
-        });
-    })();
-</script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    /* ─── NAV ─────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 40px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(7,8,13,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
 
-        :root {
-            --neon-cyan: #00ffff;
-            --neon-pink: #ff00ff;
-            --neon-blue: #0099ff;
-            --dark-bg: #0a0a0f;
-            --card-bg: #121218;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0b0;
-        }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
 
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            background: var(--dark-bg);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            line-height: 1.6;
-        }
+    .nav-logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--accent3), var(--accent));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; color: #000;
+      font-weight: 700;
+      box-shadow: 0 0 20px var(--accentGlow);
+    }
 
-        /* Animated background */
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.3;
-        }
+    .nav-logo-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
 
-        .grid-lines {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(var(--neon-cyan) 1px, transparent 1px),
-                linear-gradient(90deg, var(--neon-cyan) 1px, transparent 1px);
-            background-size: 50px 50px;
-            animation: gridMove 20s linear infinite;
-            opacity: 0.1;
-        }
+    .nav-logo-text span { color: var(--accent); }
 
-        @keyframes gridMove {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(50px); }
-        }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-        .glow-orbs {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
+    .nav-link {
+      padding: 8px 16px;
+      color: var(--text2);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
 
-        .orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            animation: float 10s ease-in-out infinite;
-        }
+    .nav-link:hover { color: var(--text); background: var(--border); }
 
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: var(--neon-cyan);
-            top: 10%;
-            left: 20%;
-            animation-delay: 0s;
-        }
+    .nav-cta {
+      padding: 9px 20px;
+      background: var(--accent);
+      color: #000;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-family: 'Syne', sans-serif;
+    }
 
-        .orb-2 {
-            width: 300px;
-            height: 300px;
-            background: var(--neon-pink);
-            bottom: 20%;
-            right: 15%;
-            animation-delay: 2s;
-        }
+    .nav-cta:hover {
+      background: #3df598;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px var(--accentGlow);
+    }
 
-        .orb-3 {
-            width: 350px;
-            height: 350px;
-            background: var(--neon-blue);
-            top: 50%;
-            left: 50%;
-            animation-delay: 4s;
-        }
+    /* ─── HERO ────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 40px 80px;
+      overflow: hidden;
+    }
 
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0); }
-            25% { transform: translate(50px, -50px); }
-            50% { transform: translate(-30px, 30px); }
-            75% { transform: translate(40px, 60px); }
-        }
+    .hero-glow {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -60%);
+      width: 900px; height: 600px;
+      background: radial-gradient(ellipse, rgba(45,224,138,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
 
-        /* Navigation */
-        nav {
-            padding: 1.5rem 5%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(10px);
-            background: rgba(18, 18, 24, 0.8);
-            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
+    .hero-inner {
+      max-width: 900px;
+      position: relative;
+    }
 
-        .logo {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-            letter-spacing: 2px;
-        }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: var(--accentDim);
+      border: 1px solid rgba(45,224,138,0.2);
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 32px;
+      animation: fadeUp 0.6s ease both;
+    }
 
-        .nav-btn {
-            padding: 0.8rem 2rem;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
-            border: none;
-            border-radius: 50px;
-            color: var(--dark-bg);
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-            font-family: 'Rajdhani', sans-serif;
-        }
+    .hero-badge .dot {
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
 
-        .nav-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
-        }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.5; transform:scale(0.8); }
+    }
 
-        /* Hero Section */
-        .hero {
-            min-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 4rem 5%;
-        }
+    .hero-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(52px, 8vw, 96px);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -2px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
 
-        .hero h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(2.5rem, 8vw, 5rem);
-            font-weight: 900;
-            margin-bottom: 1.5rem;
-            line-height: 1.2;
-            animation: glitchText 3s infinite;
-        }
+    .hero-title .line2 {
+      display: block;
+      background: linear-gradient(90deg, var(--accent), #7dffc0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
 
-        .gradient-text {
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink), var(--neon-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradientShift 5s ease infinite;
-            background-size: 200% 200%;
-        }
+    .hero-sub {
+      font-size: 19px;
+      color: var(--text2);
+      max-width: 580px;
+      margin: 0 auto 48px;
+      line-height: 1.65;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
 
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
 
-        .hero p {
-            font-size: 1.5rem;
-            color: var(--text-secondary);
-            margin-bottom: 3rem;
-            max-width: 700px;
-        }
+    .btn-add {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px;
+      background: var(--accent);
+      color: #000;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.25s;
+      box-shadow: 0 0 0 0 var(--accentGlow);
+    }
 
-        .cta-buttons {
-            display: flex;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
+    .btn-add:hover {
+      background: #3df598;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px var(--accentGlow);
+    }
 
-        .btn-primary {
-            padding: 1.2rem 3rem;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
-            border: none;
-            border-radius: 50px;
-            color: var(--dark-bg);
-            font-weight: 700;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
-        }
+    .btn-dash {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px;
+      background: transparent;
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      border: 2px solid var(--border2);
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.25s;
+    }
 
-        .btn-primary:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 0 50px rgba(0, 255, 255, 0.8);
-        }
+    .btn-dash:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accentDim);
+      transform: translateY(-2px);
+    }
 
-        .btn-secondary {
-            padding: 1.2rem 3rem;
-            background: transparent;
-            border: 2px solid var(--neon-cyan);
-            border-radius: 50px;
-            color: var(--neon-cyan);
-            font-weight: 700;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
+    /* ─── STATS ───────────────────────────────────────────── */
+    .stats-bar {
+      position: relative; z-index:1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 40px 100px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      animation: fadeUp 0.7s 0.5s ease both;
+    }
 
-        .btn-secondary:hover {
-            background: rgba(0, 255, 255, 0.1);
-            transform: translateY(-5px);
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
-        }
+    .stat-item {
+      background: var(--card);
+      padding: 32px 24px;
+      text-align: center;
+    }
 
-        /* Features Section */
-        .features {
-            padding: 6rem 5%;
-            background: linear-gradient(180deg, transparent, rgba(18, 18, 24, 0.5), transparent);
-        }
+    .stat-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -1px;
+      display: block;
+    }
 
-        .section-title {
-            text-align: center;
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 900;
-            margin-bottom: 4rem;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+    .stat-num span { color: var(--accent); }
 
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+    .stat-label {
+      font-size: 13px;
+      color: var(--text2);
+      margin-top: 4px;
+      font-weight: 500;
+    }
 
-        .feature-card {
-            background: var(--card-bg);
-            border: 1px solid rgba(0, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 2.5rem;
-            transition: all 0.4s ease;
-            position: relative;
-            overflow: hidden;
-        }
+    /* ─── SECTION ─────────────────────────────────────────── */
+    section {
+      position: relative; z-index:1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 100px 40px;
+    }
 
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
-            border-radius: 20px;
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
+    .section-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
 
-        .feature-card:hover::before {
-            opacity: 1;
-        }
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
 
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 60px rgba(0, 255, 255, 0.3);
-        }
+    .section-sub {
+      font-size: 17px;
+      color: var(--text2);
+      max-width: 520px;
+      line-height: 1.65;
+    }
 
-        .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 1.5rem;
-            display: block;
-        }
+    /* ─── FEATURES GRID ───────────────────────────────────── */
+    .features-header {
+      margin-bottom: 60px;
+    }
 
-        .feature-card h3 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: var(--neon-cyan);
-        }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 2px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
 
-        .feature-card p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
+    .feature-card {
+      background: var(--card);
+      padding: 36px 32px;
+      transition: background 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
 
-        .feature-card ul {
-            list-style: none;
-            margin-top: 1rem;
-        }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
 
-        .feature-card li {
-            padding: 0.5rem 0;
-            color: var(--text-secondary);
-            position: relative;
-            padding-left: 1.5rem;
-        }
+    .feature-card:hover {
+      background: #12151f;
+    }
 
-        .feature-card li::before {
-            content: '▸';
-            color: var(--neon-cyan);
-            position: absolute;
-            left: 0;
-        }
+    .feature-card:hover::before {
+      opacity: 1;
+    }
 
-        /* Footer */
-        footer {
-            padding: 3rem 5%;
-            text-align: center;
-            border-top: 1px solid rgba(0, 255, 255, 0.2);
-            background: var(--card-bg);
-        }
+    .feature-icon {
+      width: 52px; height: 52px;
+      background: var(--accentDim);
+      border: 1px solid rgba(45,224,138,0.15);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
 
-        footer p {
-            color: var(--text-secondary);
-        }
+    .feature-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: -0.3px;
+    }
 
-        .footer-links {
-            margin-top: 1rem;
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-        }
+    .feature-desc {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.65;
+    }
 
-        .footer-links a {
-            color: var(--neon-cyan);
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
+    .feature-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 16px;
+    }
 
-        .footer-links a:hover {
-            text-shadow: 0 0 10px var(--neon-cyan);
-        }
+    .tag {
+      padding: 3px 10px;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
-            }
+    /* ─── COMMANDS SHOWCASE ───────────────────────────────── */
+    .commands-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
 
-            .cta-buttons {
-                flex-direction: column;
-            }
+    .cmd-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+      transition: all 0.2s;
+    }
 
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    .cmd-card:hover {
+      border-color: var(--border2);
+      background: var(--bg3);
+      transform: translateY(-2px);
+    }
+
+    .cmd-name {
+      font-family: 'DM Mono', 'Courier New', monospace;
+      font-size: 14px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .cmd-name::before { content: '/'; opacity: 0.5; }
+
+    .cmd-desc {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+
+    /* ─── DASHBOARD PREVIEW ───────────────────────────────── */
+    .dash-preview {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 40px 120px rgba(0,0,0,0.6);
+      margin-top: 60px;
+    }
+
+    .dash-preview-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 20px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dash-dot { width:12px;height:12px;border-radius:50%; }
+    .dash-dot.r{background:#f04747;} .dash-dot.y{background:#faa61a;} .dash-dot.g{background:var(--accent);}
+
+    .dash-url {
+      margin-left: 12px;
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--text3);
+      max-width: 380px;
+    }
+
+    .dash-preview-body {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 380px;
+    }
+
+    .mock-sidebar {
+      background: var(--bg3);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+    }
+
+    .mock-sidebar-section {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text3);
+      margin: 20px 0 8px 8px;
+    }
+
+    .mock-sidebar-section:first-child { margin-top: 0; }
+
+    .mock-nav-item {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mock-nav-item.active {
+      background: var(--accentDim);
+      color: var(--accent);
+    }
+
+    .mock-nav-item i { font-size:14px; width:16px; }
+
+    .mock-main {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .mock-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px; }
+    .mock-title { font-family:'Syne',sans-serif;font-size:20px;font-weight:700; }
+    .mock-badge { padding:4px 10px;background:var(--accentDim);border:1px solid rgba(45,224,138,0.2);border-radius:99px;font-size:11px;font-weight:700;color:var(--accent); }
+
+    .mock-form-row { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+    .mock-input { height:38px;background:var(--bg);border:1px solid var(--border);border-radius:8px; }
+    .mock-label { height:12px;width:80px;background:var(--border2);border-radius:4px;margin-bottom:8px; }
+    .mock-field { display:flex;flex-direction:column; }
+    .mock-btn { height:36px;width:110px;background:var(--accent);border-radius:8px;opacity:0.8; }
+
+    /* ─── HOW IT WORKS ────────────────────────────────────── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-top: 60px;
+    }
+
+    .step {
+      background: var(--card);
+      padding: 48px 36px;
+      position: relative;
+    }
+
+    .step-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 64px;
+      font-weight: 800;
+      color: var(--border2);
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    .step-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .step-desc {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.65;
+    }
+
+    .step-arrow {
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 24px; height: 24px;
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: 50%;
+      display: flex; align-items:center; justify-content:center;
+      font-size: 10px;
+      color: var(--text2);
+    }
+
+    .step:last-child .step-arrow { display: none; }
+
+    /* ─── CTA BANNER ──────────────────────────────────────── */
+    .cta-section {
+      padding: 60px 40px 100px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .cta-banner {
+      background: linear-gradient(135deg, var(--bg3), var(--bg2));
+      border: 1px solid var(--border2);
+      border-radius: 24px;
+      padding: 80px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-banner::before {
+      content: '';
+      position: absolute;
+      top: -100px; left: 50%;
+      transform: translateX(-50%);
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse, rgba(45,224,138,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .cta-sub {
+      font-size: 16px;
+      color: var(--text2);
+      margin-bottom: 40px;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+      position: relative;
+    }
+
+    .cta-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      position: relative;
+    }
+
+    /* ─── FOOTER ──────────────────────────────────────────── */
+    footer {
+      position: relative; z-index:1;
+      border-top: 1px solid var(--border);
+      padding: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1200px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .footer-brand {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .footer-brand span { color: var(--accent); }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-link {
+      font-size: 13px;
+      color: var(--text3);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-link:hover { color: var(--text); }
+
+    .footer-copy {
+      font-size: 12px;
+      color: var(--text3);
+    }
+
+    /* ─── ANIMATIONS ──────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(24px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ─── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width:900px) {
+      nav { padding: 0 20px; }
+      .nav-links .nav-link { display:none; }
+      .stats-bar { grid-template-columns: repeat(2,1fr); }
+      .steps { grid-template-columns: 1fr; }
+      .step-arrow { display:none !important; }
+      section { padding: 60px 20px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .dash-preview-body { grid-template-columns: 1fr; }
+      .mock-sidebar { display:none; }
+      .cta-banner { padding: 48px 32px; }
+      footer { flex-direction:column; align-items:flex-start; }
+      .mock-form-row { grid-template-columns:1fr; }
+    }
+  </style>
 </head>
 <body>
-    <!-- Animated Background -->
-    <div class="bg-animation">
-        <div class="grid-lines"></div>
-        <div class="glow-orbs">
-            <div class="orb orb-1"></div>
-            <div class="orb orb-2"></div>
-            <div class="orb orb-3"></div>
-        </div>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-icon">⚡</div>
+    <span class="nav-logo-text">Phine<span>X</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#commands" class="nav-link">Commands</a>
+    <a href="#how" class="nav-link">Setup</a>
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="https://discord.com/api/oauth2/authorize?client_id=1488586644821905458&permissions=8&scope=bot%20applications.commands" target="_blank" class="nav-cta">
+      Add to Discord
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Advanced Discord Management Bot
     </div>
+    <h1 class="hero-title">
+      Manage your server<br>
+      <span class="line2">like a pro</span>
+    </h1>
+    <p class="hero-sub">
+      PhineX brings moderation, ticketing, community tools, and a full web dashboard — everything you need to run a thriving Discord server.
+    </p>
+    <div class="hero-actions">
+      <a href="https://discord.com/api/oauth2/authorize?client_id=1488586644821905458&permissions=8&scope=bot%20applications.commands" target="_blank" class="btn-add">
+        <i class="fab fa-discord"></i> Add to Discord
+      </a>
+      <a href="/dashboard" class="btn-dash">
+        <i class="fas fa-th-large"></i> Open Dashboard
+      </a>
+    </div>
+  </div>
+</div>
 
-    <!-- Navigation -->
-    <nav>
-        <div class="logo">PHINEX</div>
-        <button class="nav-btn" onclick="signInWithDiscord()">Login with Discord</button>
-    </nav>
+<!-- STATS -->
+<div class="stats-bar reveal">
+  <div class="stat-item">
+    <span class="stat-num" data-target="500"><span>500</span>+</span>
+    <div class="stat-label">Servers</div>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num" data-target="50000"><span>50K</span>+</span>
+    <div class="stat-label">Members Protected</div>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num" data-target="30"><span>30</span>+</span>
+    <div class="stat-label">Slash Commands</div>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num"><span>99.9</span>%</span>
+    <div class="stat-label">Uptime</div>
+  </div>
+</div>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <h1>
-            <span class="gradient-text">Ultimate Discord</span><br>
-            Server Control
-        </h1>
-        <p>Powerful moderation, advanced automation, and stunning management tools - all in one elegant dashboard</p>
-        <div class="cta-buttons">
-            <button class="btn-primary" onclick="signInWithDiscord()">Get Started Free</button>
-            <a href="#features" class="btn-secondary">Explore Features</a>
+<!-- FEATURES -->
+<section id="features">
+  <div class="features-header reveal">
+    <p class="section-eyebrow">Everything Included</p>
+    <h2 class="section-title">Built for serious communities</h2>
+    <p class="section-sub">Every feature your server needs, controlled from one powerful dashboard.</p>
+  </div>
+
+  <div class="features-grid reveal">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-shield-halved"></i></div>
+      <h3 class="feature-title">Advanced Moderation</h3>
+      <p class="feature-desc">Ban, kick, warn, and mute members with full audit logging. Auto-mod keeps your server clean around the clock.</p>
+      <div class="feature-tags">
+        <span class="tag">Ban</span><span class="tag">Kick</span><span class="tag">Warn</span><span class="tag">Logs</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-ticket-simple"></i></div>
+      <h3 class="feature-title">Ticketing System</h3>
+      <p class="feature-desc">Support tickets with dedicated channels, staff routing, and close transcripts. Community access tickets with one-time codes.</p>
+      <div class="feature-tags">
+        <span class="tag">Support</span><span class="tag">Community</span><span class="tag">Access Codes</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-hand-wave"></i></div>
+      <h3 class="feature-title">Welcome System</h3>
+      <p class="feature-desc">Greet new members with custom messages that include their name, server info, and any details you want.</p>
+      <div class="feature-tags">
+        <span class="tag">Custom Messages</span><span class="tag">{user}</span><span class="tag">{server}</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-star"></i></div>
+      <h3 class="feature-title">Starboard</h3>
+      <p class="feature-desc">Automatically highlight the best messages when they hit a star threshold. Configurable emoji and channel.</p>
+      <div class="feature-tags">
+        <span class="tag">Auto-highlight</span><span class="tag">Configurable</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-gift"></i></div>
+      <h3 class="feature-title">Giveaways</h3>
+      <p class="feature-desc">Create timed giveaways with multiple winners. Members react to enter — winners are picked automatically.</p>
+      <div class="feature-tags">
+        <span class="tag">Timed</span><span class="tag">Multi-winner</span><span class="tag">Auto-pick</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-check-to-slot"></i></div>
+      <h3 class="feature-title">Reaction Roles</h3>
+      <p class="feature-desc">Let members self-assign roles by reacting to messages. Create unlimited role menus with custom emojis.</p>
+      <div class="feature-tags">
+        <span class="tag">Self-assign</span><span class="tag">Custom Emojis</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-code"></i></div>
+      <h3 class="feature-title">Code Runner</h3>
+      <p class="feature-desc">Execute JavaScript, Python, and Bash code right in Discord. Auto-detect language from code blocks.</p>
+      <div class="feature-tags">
+        <span class="tag">JS</span><span class="tag">Python</span><span class="tag">Bash</span><span class="tag">HTML</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-brain"></i></div>
+      <h3 class="feature-title">Quizzes &amp; Polls</h3>
+      <p class="feature-desc">Engage your community with reaction-based quizzes and polls. Leaderboards track top performers.</p>
+      <div class="feature-tags">
+        <span class="tag">Leaderboard</span><span class="tag">Reactions</span><span class="tag">Scoring</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMANDS -->
+<section id="commands" style="padding-top:0">
+  <div class="reveal" style="margin-bottom:48px;">
+    <p class="section-eyebrow">Slash Commands</p>
+    <h2 class="section-title">30+ powerful commands</h2>
+    <p class="section-sub">All commands use Discord's native slash command system — autocomplete, no prefix needed.</p>
+  </div>
+
+  <div class="commands-grid reveal">
+    <div class="cmd-card"><div class="cmd-name">ban</div><div class="cmd-desc">Permanently ban a member with optional reason</div></div>
+    <div class="cmd-card"><div class="cmd-name">kick</div><div class="cmd-desc">Remove a member from the server</div></div>
+    <div class="cmd-card"><div class="cmd-name">warn</div><div class="cmd-desc">Issue a formal warning, logged to the database</div></div>
+    <div class="cmd-card"><div class="cmd-name">timeout</div><div class="cmd-desc">Mute a member for a specified duration</div></div>
+    <div class="cmd-card"><div class="cmd-name">warnings</div><div class="cmd-desc">View all warnings for a member</div></div>
+    <div class="cmd-card"><div class="cmd-name">clear</div><div class="cmd-desc">Bulk delete messages in a channel</div></div>
+    <div class="cmd-card"><div class="cmd-name">ticket setup</div><div class="cmd-desc">Configure the support ticket system</div></div>
+    <div class="cmd-card"><div class="cmd-name">community setup</div><div class="cmd-desc">Deploy the community access ticket button</div></div>
+    <div class="cmd-card"><div class="cmd-name">welcome</div><div class="cmd-desc">Set the welcome channel and message template</div></div>
+    <div class="cmd-card"><div class="cmd-name">starboard</div><div class="cmd-desc">Configure starboard channel, emoji, and threshold</div></div>
+    <div class="cmd-card"><div class="cmd-name">giveaway start</div><div class="cmd-desc">Launch a timed giveaway with prize and winners</div></div>
+    <div class="cmd-card"><div class="cmd-name">rolemenu</div><div class="cmd-desc">Create interactive reaction role menus</div></div>
+    <div class="cmd-card"><div class="cmd-name">quiz create</div><div class="cmd-desc">Post a reaction-based quiz question</div></div>
+    <div class="cmd-card"><div class="cmd-name">quiz leaderboard</div><div class="cmd-desc">Show top quiz scorers in the server</div></div>
+    <div class="cmd-card"><div class="cmd-name">code run</div><div class="cmd-desc">Execute code in JavaScript, Python, or Bash</div></div>
+    <div class="cmd-card"><div class="cmd-name">suggest</div><div class="cmd-desc">Submit a suggestion to the suggestions channel</div></div>
+  </div>
+</section>
+
+<!-- DASHBOARD PREVIEW -->
+<section style="padding-top:0; padding-bottom:100px;">
+  <div class="reveal" style="margin-bottom:0;">
+    <p class="section-eyebrow">Web Dashboard</p>
+    <h2 class="section-title">Manage everything from your browser</h2>
+    <p class="section-sub">A full-featured control panel. Log in with Discord, pick your server, and configure it all without typing a single command.</p>
+  </div>
+  <div class="dash-preview reveal">
+    <div class="dash-preview-bar">
+      <div class="dash-dot r"></div>
+      <div class="dash-dot y"></div>
+      <div class="dash-dot g"></div>
+      <div class="dash-url">phinex-bot.onrender.com/dashboard</div>
+    </div>
+    <div class="dash-preview-body">
+      <div class="mock-sidebar">
+        <div class="mock-sidebar-section">General</div>
+        <div class="mock-nav-item active"><i class="fas fa-sliders"></i>Overview</div>
+        <div class="mock-nav-item"><i class="fas fa-hand-wave"></i>Welcome</div>
+        <div class="mock-nav-item"><i class="fas fa-lightbulb"></i>Suggestions</div>
+        <div class="mock-sidebar-section">Moderation</div>
+        <div class="mock-nav-item"><i class="fas fa-shield-alt"></i>Mod Logs</div>
+        <div class="mock-nav-item"><i class="fas fa-triangle-exclamation"></i>Warnings</div>
+        <div class="mock-sidebar-section">Features</div>
+        <div class="mock-nav-item"><i class="fas fa-star"></i>Starboard</div>
+        <div class="mock-nav-item"><i class="fas fa-ticket-simple"></i>Tickets</div>
+        <div class="mock-nav-item"><i class="fas fa-users"></i>Roles</div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-header">
+          <div class="mock-title">Welcome Settings</div>
+          <div class="mock-badge">● Active</div>
         </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features" id="features">
-        <h2 class="section-title">Supercharge Your Server</h2>
-        <div class="features-grid">
-            <div class="feature-card">
-                <span class="feature-icon">🔨</span>
-                <h3>Advanced Moderation</h3>
-                <p>Complete moderation toolkit at your fingertips</p>
-                <ul>
-                    <li>Ban, kick, and warn members</li>
-                    <li>Track warning history</li>
-                    <li>Detailed moderation logs</li>
-                    <li>Role-based permissions</li>
-                </ul>
-            </div>
-
-            <div class="feature-card">
-                <span class="feature-icon">🎭</span>
-                <h3>Role Management</h3>
-                <p>Dynamic role control with one click</p>
-                <ul>
-                    <li>Create and delete roles instantly</li>
-                    <li>Assign roles to members</li>
-                    <li>Custom role colors</li>
-                    <li>Permission configuration</li>
-                </ul>
-            </div>
-
-            <div class="feature-card">
-                <span class="feature-icon">📢</span>
-                <h3>Channel Control</h3>
-                <p>Organize your server effortlessly</p>
-                <ul>
-                    <li>Create text and voice channels</li>
-                    <li>Delete unwanted channels</li>
-                    <li>Channel permissions</li>
-                    <li>Category management</li>
-                </ul>
-            </div>
-
-            <div class="feature-card">
-                <span class="feature-icon">🎁</span>
-                <h3>Giveaway System</h3>
-                <p>Engage your community with rewards</p>
-                <ul>
-                    <li>Automated giveaway hosting</li>
-                    <li>Multiple winner selection</li>
-                    <li>Custom duration settings</li>
-                    <li>Fair random selection</li>
-                </ul>
-            </div>
-
-            <div class="feature-card">
-                <span class="feature-icon">⭐</span>
-                <h3>Starboard</h3>
-                <p>Highlight the best content</p>
-                <ul>
-                    <li>Auto-post starred messages</li>
-                    <li>Customizable star threshold</li>
-                    <li>Dedicated starboard channel</li>
-                    <li>Message tracking</li>
-                </ul>
-            </div>
-
-            <div class="feature-card">
-                <span class="feature-icon">📊</span>
-                <h3>Interactive Polls</h3>
-                <p>Get community feedback instantly</p>
-                <ul>
-                    <li>Create multi-option polls</li>
-                    <li>Emoji-based voting</li>
-                    <li>Real-time results</li>
-                    <li>Beautiful embed formatting</li>
-                </ul>
-            </div>
-
-            <div class="feature-card">
-                <span class="feature-icon">🌐</span>
-                <h3>Web Dashboard</h3>
-                <p>Control everything from your browser</p>
-                <ul>
-                    <li>Intuitive visual interface</li>
-                    <li>Real-time server stats</li>
-                    <li>Multi-server management</li>
-                    <li>Secure OAuth authentication</li>
-                </ul>
-            </div>
-
-            <div class="feature-card">
-                <span class="feature-icon">⚡</span>
-                <h3>Lightning Fast</h3>
-                <p>Built for performance and reliability</p>
-                <ul>
-                    <li>Instant command execution</li>
-                    <li>99.9% uptime guarantee</li>
-                    <li>Optimized for large servers</li>
-                    <li>Regular updates</li>
-                </ul>
-            </div>
-
-            <div class="feature-card">
-                <span class="feature-icon">🆓</span>
-                <h3>Completely Free</h3>
-                <p>No hidden costs, ever</p>
-                <ul>
-                    <li>100% free forever</li>
-                    <li>No premium tiers</li>
-                    <li>Open source</li>
-                    <li>Self-hosted control</li>
-                </ul>
-            </div>
+        <div class="mock-form-row">
+          <div class="mock-field"><div class="mock-label"></div><div class="mock-input"></div></div>
+          <div class="mock-field"><div class="mock-label"></div><div class="mock-input"></div></div>
         </div>
-    </section>
+        <div class="mock-field" style="margin-top:4px;"><div class="mock-label" style="width:120px;"></div><div class="mock-input" style="height:60px;"></div></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px;"><div class="mock-btn"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2026 PhineX Bot. Built with ❤️ for Discord communities.</p>
-        <div class="footer-links">
-            <button class="nav-btn" onclick="signInWithDiscord()">Dashboard</button>
-            <a href="https://discord.gg/xBQ3ewVVHk" target="_blank">Support Server</a>
-            <a href="https://github.com/PhineX-org" target="_blank">GitHub</a>
-        </div>
-    </footer>
+<!-- HOW IT WORKS -->
+<section id="how" style="padding-top:0">
+  <div class="reveal">
+    <p class="section-eyebrow">Getting Started</p>
+    <h2 class="section-title">Up and running in minutes</h2>
+  </div>
+  <div class="steps reveal">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h3 class="step-title">Add PhineX to your server</h3>
+      <p class="step-desc">Click "Add to Discord", select your server, and grant the requested permissions. PhineX registers all slash commands automatically.</p>
+      <div class="step-arrow"><i class="fas fa-chevron-right"></i></div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h3 class="step-title">Open the Dashboard</h3>
+      <p class="step-desc">Log in with Discord at the dashboard URL. Select your server from the grid and configure every feature through the settings panel.</p>
+      <div class="step-arrow"><i class="fas fa-chevron-right"></i></div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h3 class="step-title">You're live</h3>
+      <p class="step-desc">Changes apply instantly. Run <code style="color:var(--accent);font-size:13px;">/ticket setup</code> and <code style="color:var(--accent);font-size:13px;">/community setup</code> to activate the ticketing and community systems.</p>
+    </div>
+  </div>
+</section>
 
-    <script>
-        // Smooth scroll for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-    </script>
+<!-- CTA -->
+<div class="cta-section">
+  <div class="cta-banner reveal">
+    <h2 class="cta-title">Ready to upgrade your server?</h2>
+    <p class="cta-sub">Join hundreds of communities already using PhineX to manage, moderate, and engage their members.</p>
+    <div class="cta-actions">
+      <a href="https://discord.com/api/oauth2/authorize?client_id=1488586644821905458&permissions=8&scope=bot%20applications.commands" target="_blank" class="btn-add">
+        <i class="fab fa-discord"></i> Add to Discord — It's Free
+      </a>
+      <a href="/dashboard" class="btn-dash">
+        <i class="fas fa-th-large"></i> Go to Dashboard
+      </a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand">Phine<span>X</span> Bot</div>
+  <div class="footer-links">
+    <a href="https://github.com/phinex-org/PhineX-Bot" target="_blank" class="footer-link"><i class="fab fa-github"></i> GitHub</a>
+    <a href="https://discord.com/api/oauth2/authorize?client_id=1488586644821905458&permissions=8&scope=bot%20applications.commands" target="_blank" class="footer-link"><i class="fab fa-discord"></i> Add Bot</a>
+    <a href="/dashboard" class="footer-link">Dashboard</a>
+  </div>
+  <div class="footer-copy">© 2025 PhineX Org. MIT License.</div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
 </body>
 </html>

@@ -333,6 +333,254 @@ app.get('/api/guild/:guildId/social', authenticateDiscordToken, async (req, res)
     }
 });
 
+// Verify community access code (public endpoint - no auth required)
+app.post('/api/community/verify', async (req, res) => {
+    const { code } = req.body;
+    
+    if (!code) {
+        return res.status(400).json({ error: 'Code is required' });
+    }
+
+    try {
+        const ticket = await db.getCommunityTicket(code);
+        
+        if (!ticket) {
+            return res.status(404).json({ error: 'Invalid access code' });
+        }
+
+        // Use the ticket if not already used
+        if (!ticket.used) {
+            await db.useCommunityTicket(code);
+        }
+
+        res.json({
+            success: true,
+            isAdmin: ticket.is_admin,
+            userId: ticket.user_id
+        });
+    } catch (error) {
+        console.error('Error verifying community code:', error);
+        res.status(500).json({ error: 'Failed to verify code' });
+    }
+});
+
+// Get community posts (requires valid community code)
+app.get('/api/community/:guildId/posts', async (req, res) => {
+    const { guildId } = req.params;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+
+    try {
+        const posts = await db.getPosts(guildId, limit, offset);
+        res.json({ posts });
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        res.status(500).json({ error: 'Failed to fetch posts' });
+    }
+});
+
+// Create community post (admin only)
+app.post('/api/community/:guildId/posts', async (req, res) => {
+    const { guildId } = req.params;
+    const { authorId, authorName, title, content, imageUrl, code } = req.body;
+
+    // Verify admin code
+    if (code !== 'ADMIN26') {
+        const ticket = await db.getCommunityTicket(code);
+        if (!ticket || !ticket.is_admin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+    }
+
+    try {
+        const post = await db.createPost(guildId, authorId, authorName, title, content, imageUrl);
+        res.json({ success: true, post });
+    } catch (error) {
+        console.error('Error creating post:', error);
+        res.status(500).json({ error: 'Failed to create post' });
+    }
+});
+
+// Like/unlike post
+app.post('/api/community/posts/:postId/like', async (req, res) => {
+    const { postId } = req.params;
+    const { userId, action } = req.body; // action: 'like' or 'unlike'
+
+    try {
+        if (action === 'like') {
+            await db.likePost(postId, userId);
+        } else {
+            await db.unlikePost(postId, userId);
+        }
+        
+        const post = await db.getPost(postId);
+        res.json({ success: true, likes: post.likes });
+    } catch (error) {
+        console.error('Error liking post:', error);
+        res.status(500).json({ error: 'Failed to like post' });
+    }
+});
+
+// Get comments for a post
+app.get('/api/community/posts/:postId/comments', async (req, res) => {
+    const { postId } = req.params;
+
+    try {
+        const comments = await db.getComments(postId);
+        res.json({ comments });
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        res.status(500).json({ error: 'Failed to fetch comments' });
+    }
+});
+
+// Create comment
+app.post('/api/community/posts/:postId/comments', async (req, res) => {
+    const { postId } = req.params;
+    const { authorId, authorName, content, parentId } = req.body;
+
+    try {
+        const comment = await db.createComment(postId, authorId, authorName, content, parentId);
+        res.json({ success: true, comment });
+    } catch (error) {
+        console.error('Error creating comment:', error);
+        res.status(500).json({ error: 'Failed to create comment' });
+    }
+});
+
+// Get chat messages
+app.get('/api/community/:guildId/chat/:channelType', async (req, res) => {
+    const { guildId, channelType } = req.params;
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = parseInt(req.query.offset) || 0;
+
+    try {
+        const messages = await db.getChatMessages(guildId, channelType, limit, offset);
+        res.json({ messages });
+    } catch (error) {
+        console.error('Error fetching chat messages:', error);
+        res.status(500).json({ error: 'Failed to fetch messages' });
+    }
+});
+
+// Send chat message
+app.post('/api/community/:guildId/chat/:channelType', async (req, res) => {
+    const { guildId, channelType } = req.params;
+    const { authorId, authorName, content, code } = req.body;
+
+    // For admin channel, verify admin access
+    if (channelType === 'admin') {
+        if (code !== 'ADMIN26') {
+            const ticket = await db.getCommunityTicket(code);
+            if (!ticket || !ticket.is_admin) {
+                return res.status(403).json({ error: 'Admin access required for this channel' });
+            }
+        }
+    }
+
+    try {
+        const message = await db.createChatMessage(guildId, channelType, authorId, authorName, content);
+        res.json({ success: true, message });
+    } catch (error) {
+        console.error('Error sending message:', error);
+        res.status(500).json({ error: 'Failed to send message' });
+    }
+});
+
+// Get ticket settings
+app.get('/api/guild/:guildId/ticket-settings', authenticateDiscordToken, async (req, res) => {
+    const { guildId } = req.params;
+
+    try {
+        const settings = await db.getTicketSettings(guildId);
+        res.json({ settings });
+    } catch (error) {
+        console.error('Error fetching ticket settings:', error);
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+});
+
+// Get ticket statistics
+app.get('/api/guild/:guildId/tickets/stats', authenticateDiscordToken, async (req, res) => {
+    const { guildId } = req.params;
+
+    try {
+        // Support tickets
+        const { data: supportTickets } = await db.supabase
+            .from('support_tickets')
+            .select('status')
+            .eq('guild_id', guildId);
+
+        // Community tickets
+        const { data: communityTickets } = await db.supabase
+            .from('community_tickets')
+            .select('used')
+            .eq('guild_id', guildId);
+
+        const stats = {
+            support: {
+                total: supportTickets?.length || 0,
+                open: supportTickets?.filter(t => t.status === 'open').length || 0,
+                closed: supportTickets?.filter(t => t.status === 'closed').length || 0
+            },
+            community: {
+                total: communityTickets?.length || 0,
+                used: communityTickets?.filter(t => t.used).length || 0,
+                unused: communityTickets?.filter(t => !t.used).length || 0
+            }
+        };
+
+        res.json({ stats });
+    } catch (error) {
+        console.error('Error fetching ticket stats:', error);
+        res.status(500).json({ error: 'Failed to fetch statistics' });
+    }
+});
+
+// Delete post (admin only)
+app.delete('/api/community/posts/:postId', async (req, res) => {
+    const { postId } = req.params;
+    const { code } = req.body;
+
+    // Verify admin code
+    if (code !== 'ADMIN26') {
+        const ticket = await db.getCommunityTicket(code);
+        if (!ticket || !ticket.is_admin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+    }
+
+    try {
+        await db.deletePost(postId);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting post:', error);
+        res.status(500).json({ error: 'Failed to delete post' });
+    }
+});
+
+// Delete comment (admin only)
+app.delete('/api/community/comments/:commentId', async (req, res) => {
+    const { commentId } = req.params;
+    const { code } = req.body;
+
+    // Verify admin code
+    if (code !== 'ADMIN26') {
+        const ticket = await db.getCommunityTicket(code);
+        if (!ticket || !ticket.is_admin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+    }
+
+    try {
+        await db.deleteComment(commentId);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting comment:', error);
+        res.status(500).json({ error: 'Failed to delete comment' });
+    }
+});
+
 // Start server
 const PORT = config.port || 3000;
 app.listen(PORT, () => {

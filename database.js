@@ -1,22 +1,41 @@
 const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
 class Database {
     constructor(dbPath = 'phinex-bot.db') {
+        // SQLite (local persistence — role menus, warnings, quiz, starboard, social links, giveaways)
         this.db = new sqlite3.Database(dbPath, (err) => {
             if (err) {
-                console.error('Error opening database:', err);
+                console.error('❌ SQLite error:', err);
             } else {
-                console.log('✓ Connected to SQLite database');
+                console.log('✓ SQLite connected');
                 this.initTables();
             }
         });
+
+        // Supabase (tickets, community tickets)
+        let supabaseUrl = process.env.SUPABASE_URL;
+        let supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl && global.supabaseConfig) {
+            supabaseUrl = global.supabaseConfig.url;
+            supabaseKey = global.supabaseConfig.key;
+        }
+
+        if (supabaseUrl && supabaseKey) {
+            this.supabase = createClient(supabaseUrl, supabaseKey);
+            console.log('✓ Supabase connected');
+        } else {
+            console.warn('⚠️  Supabase credentials missing — community ticket features limited');
+        }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SQLite TABLE INIT
+    // ═══════════════════════════════════════════════════════════════════════════
     initTables() {
-        // Guild settings table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS guild_settings (
+        const tables = [
+            `CREATE TABLE IF NOT EXISTS guild_settings (
                 guild_id TEXT PRIMARY KEY,
                 welcome_channel TEXT,
                 welcome_message TEXT,
@@ -24,78 +43,59 @@ class Database {
                 starboard_channel TEXT,
                 starboard_emoji TEXT DEFAULT '⭐',
                 starboard_threshold INTEGER DEFAULT 3
-            )
-        `);
-
-        // Role menus table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS role_menus (
+            )`,
+            `CREATE TABLE IF NOT EXISTS role_menus (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 guild_id TEXT NOT NULL,
                 channel_id TEXT NOT NULL,
                 message_id TEXT NOT NULL,
                 title TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Role menu roles table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS role_menu_roles (
+            )`,
+            `CREATE TABLE IF NOT EXISTS role_menu_roles (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 message_id TEXT NOT NULL,
                 emoji TEXT NOT NULL,
                 role_id TEXT NOT NULL,
                 description TEXT
-            )
-        `);
-
-        // Warnings table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS warnings (
+            )`,
+            `CREATE TABLE IF NOT EXISTS warnings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 guild_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
                 moderator_id TEXT NOT NULL,
                 reason TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Starboard messages table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS starboard_messages (
+            )`,
+            `CREATE TABLE IF NOT EXISTS mod_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                type TEXT NOT NULL,
+                moderator_id TEXT NOT NULL,
+                reason TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS starboard_messages (
                 message_id TEXT PRIMARY KEY,
                 starboard_message_id TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Social links table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS social_links (
+            )`,
+            `CREATE TABLE IF NOT EXISTS social_links (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 guild_id TEXT NOT NULL,
                 platform TEXT NOT NULL,
                 link TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(guild_id, platform)
-            )
-        `);
-
-        // Quiz settings table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS quiz_settings (
+            )`,
+            `CREATE TABLE IF NOT EXISTS quiz_settings (
                 guild_id TEXT PRIMARY KEY,
                 channel_id TEXT NOT NULL,
                 start_message TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Quiz questions table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS quiz_questions (
+            )`,
+            `CREATE TABLE IF NOT EXISTS quiz_questions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 guild_id TEXT NOT NULL,
                 message_id TEXT NOT NULL,
@@ -103,12 +103,8 @@ class Database {
                 options TEXT NOT NULL,
                 correct_answer INTEGER NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Quiz scores table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS quiz_scores (
+            )`,
+            `CREATE TABLE IF NOT EXISTS quiz_scores (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 guild_id TEXT NOT NULL,
                 user_id TEXT NOT NULL,
@@ -116,56 +112,42 @@ class Database {
                 total_answers INTEGER DEFAULT 0,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(guild_id, user_id)
-            )
-        `);
-
-        // Ticket settings table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS ticket_settings (
+            )`,
+            `CREATE TABLE IF NOT EXISTS giveaways (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id TEXT NOT NULL,
+                message_id TEXT NOT NULL,
+                channel_id TEXT NOT NULL,
+                prize TEXT,
+                winners INTEGER DEFAULT 1,
+                end_time INTEGER,
+                ended INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS coding_channels (
                 guild_id TEXT PRIMARY KEY,
                 channel_id TEXT NOT NULL,
-                support_role_id TEXT NOT NULL,
+                auto_execute INTEGER DEFAULT 1,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
+            )`
+        ];
 
-        // Tickets table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS tickets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                guild_id TEXT NOT NULL,
-                user_id TEXT NOT NULL,
-                channel_id TEXT NOT NULL,
-                status TEXT DEFAULT 'open',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                closed_at DATETIME
-            )
-        `);
-
-        // Community tickets table
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS community_tickets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                guild_id TEXT NOT NULL,
-                user_id TEXT NOT NULL,
-                code TEXT NOT NULL UNIQUE,
-                used INTEGER DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        console.log('✓ Database tables initialized');
+        for (const sql of tables) {
+            this.db.run(sql, err => {
+                if (err) console.error('Table init error:', err.message);
+            });
+        }
+        console.log('✓ SQLite tables ready');
     }
 
-    // Promisify database operations
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SQLite PROMISE WRAPPERS
+    // ═══════════════════════════════════════════════════════════════════════════
     run(sql, params = []) {
         return new Promise((resolve, reject) => {
-            this.db.run(sql, params, function(err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve({ lastID: this.lastID, changes: this.changes });
-                }
+            this.db.run(sql, params, function (err) {
+                if (err) reject(err);
+                else resolve({ lastID: this.lastID, changes: this.changes });
             });
         });
     }
@@ -173,11 +155,8 @@ class Database {
     get(sql, params = []) {
         return new Promise((resolve, reject) => {
             this.db.get(sql, params, (err, row) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(row);
-                }
+                if (err) reject(err);
+                else resolve(row);
             });
         });
     }
@@ -185,35 +164,49 @@ class Database {
     all(sql, params = []) {
         return new Promise((resolve, reject) => {
             this.db.all(sql, params, (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows);
-                }
+                if (err) reject(err);
+                else resolve(rows);
             });
         });
     }
 
-    // Guild settings methods
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GUILD SETTINGS
+    // ═══════════════════════════════════════════════════════════════════════════
     async getGuildSettings(guildId) {
         return this.get('SELECT * FROM guild_settings WHERE guild_id = ?', [guildId]);
     }
 
+    async updateGuildSettings(guildId, updates = {}) {
+        const existing = await this.getGuildSettings(guildId);
+        if (!existing) {
+            const cols   = ['guild_id', ...Object.keys(updates)];
+            const vals   = [guildId, ...Object.values(updates)];
+            const placeholders = vals.map(() => '?').join(', ');
+            return this.run(
+                `INSERT INTO guild_settings (${cols.join(', ')}) VALUES (${placeholders})`,
+                vals
+            );
+        } else {
+            const setClauses = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+            return this.run(
+                `UPDATE guild_settings SET ${setClauses} WHERE guild_id = ?`,
+                [...Object.values(updates), guildId]
+            );
+        }
+    }
+
     async setWelcomeChannel(guildId, channelId, message) {
-        return this.run(
-            'INSERT OR REPLACE INTO guild_settings (guild_id, welcome_channel, welcome_message) VALUES (?, ?, ?)',
-            [guildId, channelId, message]
-        );
+        return this.updateGuildSettings(guildId, { welcome_channel: channelId, welcome_message: message });
     }
 
     async setSuggestionsChannel(guildId, channelId) {
-        return this.run(
-            'INSERT OR REPLACE INTO guild_settings (guild_id, suggestions_channel) VALUES (?, ?)',
-            [guildId, channelId]
-        );
+        return this.updateGuildSettings(guildId, { suggestions_channel: channelId });
     }
 
-    // Role menu methods
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ROLE MENUS
+    // ═══════════════════════════════════════════════════════════════════════════
     async createRoleMenu(guildId, channelId, messageId, title) {
         return this.run(
             'INSERT INTO role_menus (guild_id, channel_id, message_id, title) VALUES (?, ?, ?, ?)',
@@ -246,11 +239,9 @@ class Database {
         );
     }
 
-    async getRoleMenuRoles(messageId) {
-        return this.all('SELECT * FROM role_menu_roles WHERE message_id = ?', [messageId]);
-    }
-
-    // Warnings methods
+    // ═══════════════════════════════════════════════════════════════════════════
+    // WARNINGS & MOD LOGS
+    // ═══════════════════════════════════════════════════════════════════════════
     async addWarning(guildId, userId, moderatorId, reason) {
         return this.run(
             'INSERT INTO warnings (guild_id, user_id, moderator_id, reason) VALUES (?, ?, ?, ?)',
@@ -266,14 +257,31 @@ class Database {
     }
 
     async getWarningCount(guildId, userId) {
-        const result = await this.get(
+        const row = await this.get(
             'SELECT COUNT(*) as count FROM warnings WHERE guild_id = ? AND user_id = ?',
             [guildId, userId]
         );
-        return result ? result.count : 0;
+        return row ? row.count : 0;
     }
 
-    // Starboard methods
+    async logModeration(guildId, userId, type, moderatorId, reason) {
+        return this.run(
+            'INSERT INTO mod_logs (guild_id, user_id, type, moderator_id, reason) VALUES (?, ?, ?, ?, ?)',
+            [guildId, userId, type, moderatorId, reason]
+        );
+    }
+
+    // ✅ FIX: was missing — referenced in server.js /api/guild/:guildId/logs
+    async getModerationLogs(guildId, limit = 50) {
+        return this.all(
+            'SELECT * FROM mod_logs WHERE guild_id = ? ORDER BY created_at DESC LIMIT ?',
+            [guildId, limit]
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // STARBOARD
+    // ═══════════════════════════════════════════════════════════════════════════
     async addStarboardMessage(messageId, starboardMessageId) {
         return this.run(
             'INSERT INTO starboard_messages (message_id, starboard_message_id) VALUES (?, ?)',
@@ -285,7 +293,9 @@ class Database {
         return this.get('SELECT * FROM starboard_messages WHERE message_id = ?', [messageId]);
     }
 
-    // Social links methods
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SOCIAL LINKS
+    // ═══════════════════════════════════════════════════════════════════════════
     async addSocialLink(guildId, platform, link) {
         return this.run(
             'INSERT OR REPLACE INTO social_links (guild_id, platform, link) VALUES (?, ?, ?)',
@@ -304,7 +314,9 @@ class Database {
         );
     }
 
-    // Quiz methods
+    // ═══════════════════════════════════════════════════════════════════════════
+    // QUIZ
+    // ═══════════════════════════════════════════════════════════════════════════
     async setQuizSettings(guildId, channelId, startMessage) {
         return this.run(
             'INSERT OR REPLACE INTO quiz_settings (guild_id, channel_id, start_message) VALUES (?, ?, ?)',
@@ -323,16 +335,11 @@ class Database {
         );
     }
 
-    async getQuizQuestion(messageId) {
-        return this.get('SELECT * FROM quiz_questions WHERE message_id = ?', [messageId]);
-    }
-
     async updateQuizScore(guildId, userId, correct) {
         const existing = await this.get(
             'SELECT * FROM quiz_scores WHERE guild_id = ? AND user_id = ?',
             [guildId, userId]
         );
-
         if (existing) {
             return this.run(
                 'UPDATE quiz_scores SET correct_answers = correct_answers + ?, total_answers = total_answers + 1, updated_at = CURRENT_TIMESTAMP WHERE guild_id = ? AND user_id = ?',
@@ -353,93 +360,331 @@ class Database {
         );
     }
 
-    // Ticket methods
-    async setTicketSettings(guildId, channelId, supportRoleId) {
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GIVEAWAYS
+    // ═══════════════════════════════════════════════════════════════════════════
+    async createGiveaway(guildId, messageId, channelId, prize, winners, endTime) {
         return this.run(
-            'INSERT OR REPLACE INTO ticket_settings (guild_id, channel_id, support_role_id) VALUES (?, ?, ?)',
-            [guildId, channelId, supportRoleId]
+            'INSERT INTO giveaways (guild_id, message_id, channel_id, prize, winners, end_time) VALUES (?, ?, ?, ?, ?, ?)',
+            [guildId, messageId, channelId, prize, winners, endTime]
         );
+    }
+
+    async getActiveGiveaways() {
+        return this.all('SELECT * FROM giveaways WHERE ended = 0');
+    }
+
+    async endGiveaway(messageId) {
+        return this.run('UPDATE giveaways SET ended = 1 WHERE message_id = ?', [messageId]);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SUPABASE — TICKET SETTINGS
+    // ═══════════════════════════════════════════════════════════════════════════
+    async setTicketSettings(guildId, settings) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        const payload = {
+            guild_id: guildId,
+            updated_at: new Date().toISOString()
+        };
+        if (settings.supportChannelId  !== undefined) payload.support_channel_id   = settings.supportChannelId;
+        if (settings.supportRoleId     !== undefined) payload.support_role_id      = settings.supportRoleId;
+        if (settings.communityChannelId !== undefined) payload.community_channel_id = settings.communityChannelId;
+        if (settings.communityLinks    !== undefined) payload.community_links      = JSON.stringify(settings.communityLinks);
+
+        const { data, error } = await this.supabase
+            .from('ticket_settings')
+            .upsert(payload, { onConflict: 'guild_id' })
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
     }
 
     async getTicketSettings(guildId) {
-        return this.get('SELECT * FROM ticket_settings WHERE guild_id = ?', [guildId]);
+        if (!this.supabase) return null;
+        const { data, error } = await this.supabase
+            .from('ticket_settings')
+            .select('*')
+            .eq('guild_id', guildId)
+            .single();
+        if (error && error.code !== 'PGRST116') throw error;
+        if (data?.community_links && typeof data.community_links === 'string') {
+            try { data.community_links = JSON.parse(data.community_links); } catch { /* ignore */ }
+        }
+        return data;
     }
 
-    async createTicket(guildId, userId, channelId) {
-        return this.run(
-            'INSERT INTO tickets (guild_id, user_id, channel_id, status) VALUES (?, ?, ?, ?)',
-            [guildId, userId, channelId, 'open']
-        );
-    }
-
-    async getOpenTicket(guildId, userId) {
-        return this.get(
-            'SELECT * FROM tickets WHERE guild_id = ? AND user_id = ? AND status = ?',
-            [guildId, userId, 'open']
-        );
-    }
-
-    async getTicketByChannel(channelId) {
-        return this.get('SELECT * FROM tickets WHERE channel_id = ?', [channelId]);
-    }
-
-    async closeTicket(channelId) {
-        return this.run(
-            'UPDATE tickets SET status = ?, closed_at = CURRENT_TIMESTAMP WHERE channel_id = ?',
-            ['closed', channelId]
-        );
-    }
-
-    async getTicketStats(guildId) {
-        const total = await this.get(
-            'SELECT COUNT(*) as count FROM tickets WHERE guild_id = ?',
-            [guildId]
-        );
-        const open = await this.get(
-            'SELECT COUNT(*) as count FROM tickets WHERE guild_id = ? AND status = ?',
-            [guildId, 'open']
-        );
-        const closed = await this.get(
-            'SELECT COUNT(*) as count FROM tickets WHERE guild_id = ? AND status = ?',
-            [guildId, 'closed']
-        );
-
-        return {
-            total: total ? total.count : 0,
-            open: open ? open.count : 0,
-            closed: closed ? closed.count : 0
-        };
-    }
-
-    // Community tickets methods
-    async createCommunityTicket(guildId, userId, code) {
-        return this.run(
-            'INSERT INTO community_tickets (guild_id, user_id, code) VALUES (?, ?, ?)',
-            [guildId, userId, code]
-        );
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SUPABASE — COMMUNITY TICKETS
+    // ═══════════════════════════════════════════════════════════════════════════
+    async createCommunityTicket(guildId, userId, code, isAdmin = false) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        const { data, error } = await this.supabase
+            .from('community_tickets')
+            .insert({ guild_id: guildId, user_id: userId, code, is_admin: isAdmin, used: false })
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
     }
 
     async getCommunityTicket(code) {
-        return this.get('SELECT * FROM community_tickets WHERE code = ?', [code]);
+        if (!this.supabase) return null;
+        const { data, error } = await this.supabase
+            .from('community_tickets')
+            .select('*')
+            .eq('code', code)
+            .single();
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+    }
+
+    async getUserCommunityTickets(guildId, userId) {
+        if (!this.supabase) return [];
+        const { data, error } = await this.supabase
+            .from('community_tickets')
+            .select('*')
+            .eq('guild_id', guildId)
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+        if (error && error.code !== 'PGRST116') throw error;
+        return data || [];
     }
 
     async useCommunityTicket(code) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        const { data, error } = await this.supabase
+            .from('community_tickets')
+            .update({ used: true, used_at: new Date().toISOString() })
+            .eq('code', code)
+            .eq('used', false)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SUPABASE — SUPPORT TICKETS
+    // ═══════════════════════════════════════════════════════════════════════════
+    async createSupportTicket(guildId, userId, channelId) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        const { data, error } = await this.supabase
+            .from('support_tickets')
+            .insert({ guild_id: guildId, user_id: userId, channel_id: channelId, status: 'open' })
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    }
+
+    async getOpenSupportTicket(guildId, userId) {
+        if (!this.supabase) return null;
+        const { data, error } = await this.supabase
+            .from('support_tickets')
+            .select('*')
+            .eq('guild_id', guildId)
+            .eq('user_id', userId)
+            .eq('status', 'open')
+            .maybeSingle();
+        if (error) throw error;
+        return data;
+    }
+
+    async getSupportTicketByChannel(channelId) {
+        if (!this.supabase) return null;
+        const { data, error } = await this.supabase
+            .from('support_tickets')
+            .select('*')
+            .eq('channel_id', channelId)
+            .maybeSingle();
+        if (error) throw error;
+        return data;
+    }
+
+    async closeSupportTicket(channelId) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        const { data, error } = await this.supabase
+            .from('support_tickets')
+            .update({ status: 'closed', closed_at: new Date().toISOString() })
+            .eq('channel_id', channelId)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SUPABASE — COMMUNITY POSTS
+    // ═══════════════════════════════════════════════════════════════════════════
+    async createPost(guildId, authorId, authorName, title, content, imageUrl = null) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        const { data, error } = await this.supabase
+            .from('community_posts')
+            .insert({ guild_id: guildId, author_id: authorId, author_name: authorName, title, content, image_url: imageUrl, likes: 0 })
+            .select().single();
+        if (error) throw error;
+        return data;
+    }
+
+    async getPosts(guildId, limit = 50, offset = 0) {
+        if (!this.supabase) return [];
+        const { data, error } = await this.supabase
+            .from('community_posts').select('*').eq('guild_id', guildId)
+            .order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+        if (error) throw error;
+        return data || [];
+    }
+
+    // ✅ FIX: was missing — referenced in server.js /api/community/posts/:postId/like
+    async getPost(postId) {
+        if (!this.supabase) return null;
+        const { data, error } = await this.supabase
+            .from('community_posts')
+            .select('*')
+            .eq('id', postId)
+            .single();
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+    }
+
+    // ✅ FIX: was missing
+    async deletePost(postId) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        // Delete likes and comments first
+        await this.supabase.from('community_post_likes').delete().eq('post_id', postId);
+        await this.supabase.from('community_comments').delete().eq('post_id', postId);
+        const { error } = await this.supabase
+            .from('community_posts')
+            .delete()
+            .eq('id', postId);
+        if (error) throw error;
+    }
+
+    // ✅ FIX: was missing — referenced in server.js /api/community/posts/:postId/like
+    async likePost(postId, userId) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        // Insert like record (ignore duplicate)
+        await this.supabase
+            .from('community_post_likes')
+            .upsert({ post_id: postId, user_id: userId }, { onConflict: 'post_id,user_id', ignoreDuplicates: true });
+        // Increment likes counter
+        const { data: post } = await this.supabase.from('community_posts').select('likes').eq('id', postId).single();
+        const { error } = await this.supabase
+            .from('community_posts')
+            .update({ likes: (post?.likes || 0) + 1 })
+            .eq('id', postId);
+        if (error) throw error;
+    }
+
+    // ✅ FIX: was missing
+    async unlikePost(postId, userId) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        await this.supabase
+            .from('community_post_likes')
+            .delete()
+            .eq('post_id', postId)
+            .eq('user_id', userId);
+        const { data: post } = await this.supabase.from('community_posts').select('likes').eq('id', postId).single();
+        const { error } = await this.supabase
+            .from('community_posts')
+            .update({ likes: Math.max(0, (post?.likes || 1) - 1) })
+            .eq('id', postId);
+        if (error) throw error;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SUPABASE — COMMENTS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ✅ FIX: was missing — referenced in server.js
+    async getComments(postId) {
+        if (!this.supabase) return [];
+        const { data, error } = await this.supabase
+            .from('community_comments')
+            .select('*')
+            .eq('post_id', postId)
+            .is('parent_id', null)
+            .order('created_at', { ascending: true });
+        if (error) throw error;
+        return data || [];
+    }
+
+    // ✅ FIX: was missing
+    async createComment(postId, authorId, authorName, content, parentId = null) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        const payload = { post_id: postId, author_id: authorId, author_name: authorName, content };
+        if (parentId) payload.parent_id = parentId;
+        const { data, error } = await this.supabase
+            .from('community_comments')
+            .insert(payload)
+            .select().single();
+        if (error) throw error;
+        return data;
+    }
+
+    // ✅ FIX: was missing
+    async deleteComment(commentId) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        // Delete replies first
+        await this.supabase.from('community_comments').delete().eq('parent_id', commentId);
+        const { error } = await this.supabase
+            .from('community_comments')
+            .delete()
+            .eq('id', commentId);
+        if (error) throw error;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SUPABASE — CHAT MESSAGES
+    // ═══════════════════════════════════════════════════════════════════════════
+    async createChatMessage(guildId, channelType, authorId, authorName, content) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
+        const { data, error } = await this.supabase
+            .from('community_chat_messages')
+            .insert({ guild_id: guildId, channel_type: channelType, author_id: authorId, author_name: authorName, content })
+            .select().single();
+        if (error) throw error;
+        return data;
+    }
+
+    async getChatMessages(guildId, channelType, limit = 100) {
+        if (!this.supabase) return [];
+        const { data, error } = await this.supabase
+            .from('community_chat_messages').select('*')
+            .eq('guild_id', guildId).eq('channel_type', channelType)
+            .order('created_at', { ascending: false }).limit(limit);
+        if (error) throw error;
+        return (data || []).reverse();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CODING CHANNELS
+    // ═══════════════════════════════════════════════════════════════════════════
+    async setCodingChannel(guildId, channelId) {
         return this.run(
-            'UPDATE community_tickets SET used = 1 WHERE code = ?',
-            [code]
+            `INSERT OR REPLACE INTO coding_channels (guild_id, channel_id, auto_execute) VALUES (?, ?, 1)`,
+            [guildId, channelId]
         );
     }
 
-    // Close database connection
+    async getCodingChannel(guildId) {
+        return this.get(`SELECT * FROM coding_channels WHERE guild_id = ?`, [guildId]);
+    }
+
+    async removeCodingChannel(guildId) {
+        return this.run(`DELETE FROM coding_channels WHERE guild_id = ?`, [guildId]);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CLOSE
+    // ═══════════════════════════════════════════════════════════════════════════
     close() {
         return new Promise((resolve, reject) => {
-            this.db.close((err) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    console.log('✓ Database connection closed');
-                    resolve();
-                }
+            this.db.close(err => {
+                if (err) reject(err);
+                else { console.log('✓ Database closed'); resolve(); }
             });
         });
     }

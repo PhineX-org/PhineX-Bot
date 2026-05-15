@@ -1,7 +1,7 @@
 {
   "name": "phinex-bot",
-  "version": "2.0.0",
-  "description": "Advanced Discord bot with slash commands, web dashboard, and comprehensive server management",
+  "version": "2.1.0",
+  "description": "Advanced Discord bot with slash commands, web dashboard, comprehensive server management, and community ticketing system",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -17,11 +17,15 @@
     "moderation",
     "server-management",
     "slash-commands",
-    "discord.js"
+    "discord.js",
+    "ticketing-system",
+    "community",
+    "supabase"
   ],
   "author": "PhineX Org",
   "license": "MIT",
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.5",
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
