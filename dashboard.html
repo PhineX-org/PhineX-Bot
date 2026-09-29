@@ -721,8 +721,8 @@
   }
 
   // ─── OAUTH FLOW ───────────────────────────────────────────
-  const REDIRECT = encodeURIComponent(window.location.origin + '/dashboard');
-  const OAUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT}&response_type=token&scope=${encodeURIComponent(OAUTH_SCOPES)}`;
+  const REDIRECT = encodeURIComponent(window.location.origin + '/dashboard.html');
+  const OAUTH_URL = `https://discord.com/oauth2/authorize?client_id=1488586644821905458&permissions=8&integration_type=0&scope=bot`;
 
   $('discordLoginBtn').href = OAUTH_URL;
 
