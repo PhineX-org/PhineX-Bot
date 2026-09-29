@@ -3,10 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const cors = require('cors');
-const Database = require('./database.js');
 
 const app = express();
-const db = new Database();
 
 // Load config from environment variables (Railway) or config.json (local development)
 let config;
@@ -29,8 +27,10 @@ try {
     process.exit(1);
 }
 
-// Import Discord bot client
-const bot = require('./bot.js');
+// Import Discord bot client (and reuse its single Database connection —
+// ✅ FIX: server.js used to open its own separate Database() on top of
+// bot.js's, doubling SQLite/Supabase connections for no reason)
+const { client: bot, db, ADMIN_CODE } = require('./bot.js');
 
 // CORS Configuration for GitHub Pages
 const corsOptions = {
@@ -75,6 +75,11 @@ app.get('/', (req, res) => {
 });
 app.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'dashboard.html'));
+});
+// ✅ FIX: community.html existed on disk (and is referenced in HOSTING_GUIDE.md)
+// but no route ever served it, so /community 404'd.
+app.get('/community', (req, res) => {
+    res.sendFile(path.join(__dirname, 'community.html'));
 });
 
 // API Routes (all require valid Discord token)
@@ -385,7 +390,7 @@ app.post('/api/community/:guildId/posts', async (req, res) => {
     const { authorId, authorName, title, content, imageUrl, code } = req.body;
 
     // Verify admin code
-    if (code !== 'ADMIN26') {
+    if (code !== ADMIN_CODE) {
         const ticket = await db.getCommunityTicket(code);
         if (!ticket || !ticket.is_admin) {
             return res.status(403).json({ error: 'Admin access required' });
@@ -470,7 +475,7 @@ app.post('/api/community/:guildId/chat/:channelType', async (req, res) => {
 
     // For admin channel, verify admin access
     if (channelType === 'admin') {
-        if (code !== 'ADMIN26') {
+        if (code !== ADMIN_CODE) {
             const ticket = await db.getCommunityTicket(code);
             if (!ticket || !ticket.is_admin) {
                 return res.status(403).json({ error: 'Admin access required for this channel' });
@@ -543,7 +548,7 @@ app.delete('/api/community/posts/:postId', async (req, res) => {
     const { code } = req.body;
 
     // Verify admin code
-    if (code !== 'ADMIN26') {
+    if (code !== ADMIN_CODE) {
         const ticket = await db.getCommunityTicket(code);
         if (!ticket || !ticket.is_admin) {
             return res.status(403).json({ error: 'Admin access required' });
@@ -565,7 +570,7 @@ app.delete('/api/community/comments/:commentId', async (req, res) => {
     const { code } = req.body;
 
     // Verify admin code
-    if (code !== 'ADMIN26') {
+    if (code !== ADMIN_CODE) {
         const ticket = await db.getCommunityTicket(code);
         if (!ticket || !ticket.is_admin) {
             return res.status(403).json({ error: 'Admin access required' });

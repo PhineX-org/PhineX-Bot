@@ -14,8 +14,18 @@ class Database {
         });
 
         // Supabase (tickets, community tickets)
+        // ✅ FIX: _env.example already listed SUPABASE_SERVICE_KEY but nothing
+        // ever read it — this server-side client used the anon key only. If
+        // you tighten RLS (recommended, see supabase_rls_hardening.sql), the
+        // backend needs the *service role* key to keep working, since it's a
+        // trusted context that already enforces its own checks (admin code,
+        // single-use tickets, Discord OAuth on the dashboard). The anon key
+        // stays public/client-safe for community.html's direct reads.
         let supabaseUrl = process.env.SUPABASE_URL;
-        let supabaseKey = process.env.SUPABASE_ANON_KEY;
+        let supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+        if (!process.env.SUPABASE_SERVICE_KEY && process.env.SUPABASE_ANON_KEY) {
+            console.warn('⚠️  SUPABASE_SERVICE_KEY not set — falling back to the anon key server-side. This is fine with the default (permissive) RLS policies, but will break ticket/admin features if you lock RLS down. See supabase_rls_hardening.sql.');
+        }
 
         if (!supabaseUrl && global.supabaseConfig) {
             supabaseUrl = global.supabaseConfig.url;
@@ -649,12 +659,15 @@ class Database {
         return data;
     }
 
-    async getChatMessages(guildId, channelType, limit = 100) {
+    // ✅ FIX: server.js already passed a 4th `offset` argument for pagination,
+    // but it was silently dropped here — every "page" returned the same
+    // most-recent `limit` messages.
+    async getChatMessages(guildId, channelType, limit = 100, offset = 0) {
         if (!this.supabase) return [];
         const { data, error } = await this.supabase
             .from('community_chat_messages').select('*')
             .eq('guild_id', guildId).eq('channel_type', channelType)
-            .order('created_at', { ascending: false }).limit(limit);
+            .order('created_at', { ascending: false }).range(offset, offset + limit - 1);
         if (error) throw error;
         return (data || []).reverse();
     }

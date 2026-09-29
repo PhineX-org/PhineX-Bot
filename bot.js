@@ -57,7 +57,10 @@ global.supabaseConfig = {
 };
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
-const ADMIN_CODE = 'ADMIN26';
+// ✅ FIX: was a fixed literal ('ADMIN26') baked directly into source — anyone
+// with read access to the repo (this project references a public GitHub
+// repo) had the permanent admin override code. Now configurable via env var.
+const ADMIN_CODE = process.env.ADMIN_ACCESS_CODE || 'ADMIN26';
 
 const FONTS = {
     normal: (t) => t,
@@ -87,6 +90,18 @@ const userSessions = new Map();
 const WEB_SERVER_PORT = 8080;
 const CODE_EXECUTION_TIMEOUT = 10000; // 10 seconds
 const webFiles = new Map(); // Store HTML files for serving
+
+// ⚠️ SECURITY: executeCode() below runs arbitrary user-submitted code directly
+// on this host via exec() with NO sandboxing (no container, no network/FS
+// isolation). Anyone who can post in the configured coding channel can read
+// env vars (including your bot token / Supabase keys), write/delete files,
+// or use this host to attack other systems. This is disabled by default —
+// only set ENABLE_CODE_EXECUTION=true if this code runs inside an isolated,
+// disposable container (e.g. Docker/Firecracker) with no access to secrets.
+const CODE_EXECUTION_ENABLED = process.env.ENABLE_CODE_EXECUTION === 'true';
+if (!CODE_EXECUTION_ENABLED) {
+    console.warn('⚠️  Coding-channel code execution is DISABLED (set ENABLE_CODE_EXECUTION=true to enable — only in a sandboxed environment).');
+}
 
 // Simple HTTP server for serving HTML files
 const webServer = http.createServer((req, res) => {
@@ -257,6 +272,21 @@ function generateTicketCode() {
     return crypto.randomBytes(4).toString('hex').toUpperCase();
 }
 
+// ✅ FIX: safeReply was called in catch blocks but never defined anywhere,
+// so any failing command threw a second "safeReply is not defined" error
+// instead of showing the user a clean error message.
+async function safeReply(interaction, payload) {
+    try {
+        if (interaction.deferred || interaction.replied) {
+            await interaction.editReply(payload);
+        } else {
+            await interaction.reply(payload);
+        }
+    } catch (err) {
+        console.error('safeReply failed:', err);
+    }
+}
+
 function parseDuration(duration) {
     const time = parseInt(duration);
     const unit = duration.slice(-1).toLowerCase();
@@ -282,7 +312,11 @@ async function endGiveaway(message, winnersCount) {
         .setTitle('🎉 Giveaway Ended!')
         .setDescription(`**Winners:** ${winnerList}`)
         .setTimestamp();
-    message.channel.send({ content: winnerList, embeds: [embed] });
+    await message.channel.send({ content: winnerList, embeds: [embed] });
+    // ✅ FIX: this was never called anywhere, so giveaways.ended stayed 0
+    // forever and getActiveGiveaways() (also unused) had no way to tell
+    // finished giveaways from active ones.
+    await db.endGiveaway(message.id).catch(err => console.error('Failed to mark giveaway ended:', err));
 }
 
 // ─── PREFIX COMMANDS ─────────────────────────────────────────────────────────
@@ -637,7 +671,8 @@ client.on('messageCreate', async message => {
 // ─── CODING CHANNEL MESSAGE HANDLER ──────────────────────────────────────────
 client.on('messageCreate', async message => {
     if (message.author.bot || !message.guild) return;
-    
+    if (!CODE_EXECUTION_ENABLED) return; // ✅ FIX: feature is opt-in now, see warning above
+
     try {
         // Check if this channel is a coding channel
         const codingChannel = await db.getCodingChannel(message.guild.id);
@@ -1270,8 +1305,17 @@ client.on('interactionCreate', async interaction => {
             const opt2     = interaction.options.getString('option2');
             const opt3     = interaction.options.getString('option3');
             const opt4     = interaction.options.getString('option4');
-            const correct  = interaction.options.getInteger('correct');
+            const correctInput = interaction.options.getInteger('correct'); // 1-based, matches what's shown to users
             const options  = [opt1, opt2, ...(opt3 ? [opt3] : []), ...(opt4 ? [opt4] : [])];
+            // ✅ FIX: this was stored as the raw 1-based input, but grading in the
+            // messageReactionAdd handler compares a 0-based reaction index against
+            // it — every quiz answer was graded against the wrong option. Convert
+            // to 0-based here so it's consistent with the !quiz-question prefix
+            // command, which already did this correctly.
+            if (!Number.isInteger(correctInput) || correctInput < 1 || correctInput > options.length) {
+                return interaction.editReply({ content: `❌ "correct" must be a number between 1 and ${options.length} (the option number).` });
+            }
+            const correct = correctInput - 1;
             const emojis   = ['1️⃣','2️⃣','3️⃣','4️⃣'];
             const embed = new EmbedBuilder()
                 .setColor('#39ff14').setTitle('📊 Quiz Question')
@@ -1556,5 +1600,41 @@ async function handleCommunityAccessButton(interaction) {
     }
 }
 
-module.exports = client;
-client.login(config.botToken);
+// ✅ FIX: there was no 'ready' listener at all, so a successful (or silently
+// failing) login gave zero console feedback.
+client.once('ready', async () => {
+    console.log(`✓ Logged in as ${client.user.tag} (${client.guilds.cache.size} guild(s))`);
+
+    // ✅ FIX: giveaway end timers only ever lived in setTimeout(), so a
+    // restart (very likely on free hosting — see HOSTING_GUIDE.md) silently
+    // lost any in-progress giveaway forever, with no winner ever announced.
+    try {
+        const active = await db.getActiveGiveaways();
+        for (const g of active) {
+            const remaining = g.end_time - Date.now();
+            const resolveGiveaway = async () => {
+                try {
+                    const guild = client.guilds.cache.get(g.guild_id);
+                    const channel = guild && await guild.channels.fetch(g.channel_id).catch(() => null);
+                    const message = channel && await channel.messages.fetch(g.message_id).catch(() => null);
+                    if (message) await endGiveaway(message, g.winners);
+                    else await db.endGiveaway(g.message_id); // channel/message gone — just clear it
+                } catch (err) {
+                    console.error(`Failed to resolve giveaway ${g.message_id}:`, err);
+                }
+            };
+            if (remaining <= 0) resolveGiveaway();
+            else setTimeout(resolveGiveaway, remaining);
+        }
+        if (active.length) console.log(`✓ Resumed ${active.length} pending giveaway(s)`);
+    } catch (err) {
+        console.error('Failed to resume giveaways:', err);
+    }
+});
+
+module.exports = { client, db, ADMIN_CODE };
+client.login(config.botToken).catch(err => {
+    console.error('❌ Discord login failed:', err.message);
+    console.error('   Check BOT_TOKEN is current, and that "Message Content" + "Server Members" intents are enabled in the Discord Developer Portal (Bot tab).');
+    process.exit(1);
+});
