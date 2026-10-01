@@ -751,8 +751,8 @@
     <a href="#features" class="nav-link">Features</a>
     <a href="#commands" class="nav-link">Commands</a>
     <a href="#how" class="nav-link">Setup</a>
-    <a href="dashboard.html" class="nav-link">Dashboard</a>
-    <a href="https://discord.com/api/oauth2/authorize?client_id=1488586644821905458&permissions=8&scope=bot%20applications.commands" target="_blank" class="nav-cta">
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/invite" class="nav-cta">
       Add to Discord
     </a>
   </div>
@@ -774,10 +774,10 @@
       PhineX brings moderation, ticketing, community tools, and a full web dashboard — everything you need to run a thriving Discord server.
     </p>
     <div class="hero-actions">
-      <a href="https://discord.com/api/oauth2/authorize?client_id=1488586644821905458&permissions=8&scope=bot%20applications.commands" target="_blank" class="btn-add">
+      <a href="/invite" class="btn-add">
         <i class="fab fa-discord"></i> Add to Discord
       </a>
-      <a href="dashboard.html" class="btn-dash">
+      <a href="/dashboard" class="btn-dash">
         <i class="fas fa-th-large"></i> Open Dashboard
       </a>
     </div>
@@ -786,22 +786,10 @@
 
 <!-- STATS -->
 <div class="stats-bar reveal">
-  <div class="stat-item">
-    <span class="stat-num" data-target="500"><span>500</span>+</span>
-    <div class="stat-label">Servers</div>
-  </div>
-  <div class="stat-item">
-    <span class="stat-num" data-target="50000"><span>50K</span>+</span>
-    <div class="stat-label">Members Protected</div>
-  </div>
-  <div class="stat-item">
-    <span class="stat-num" data-target="30"><span>30</span>+</span>
-    <div class="stat-label">Slash Commands</div>
-  </div>
-  <div class="stat-item">
-    <span class="stat-num"><span>99.9</span>%</span>
-    <div class="stat-label">Uptime</div>
-  </div>
+  <div class="stat-item"><span class="stat-num"><span>39</span></span><div class="stat-label">Slash Commands</div></div>
+  <div class="stat-item"><span class="stat-num"><span>15</span></span><div class="stat-label">Dashboard Modules</div></div>
+  <div class="stat-item"><span class="stat-num"><span>0</span>$</span><div class="stat-label">Free to use</div></div>
+  <div class="stat-item"><span class="stat-num"><span>MIT</span></span><div class="stat-label">Open Source</div></div>
 </div>
 
 <!-- FEATURES -->
@@ -863,11 +851,9 @@
     </div>
     <div class="feature-card">
       <div class="feature-icon"><i class="fas fa-code"></i></div>
-      <h3 class="feature-title">Code Runner</h3>
-      <p class="feature-desc">Execute JavaScript, Python, and Bash code right in Discord. Auto-detect language from code blocks.</p>
-      <div class="feature-tags">
-        <span class="tag">JS</span><span class="tag">Python</span><span class="tag">Bash</span><span class="tag">HTML</span>
-      </div>
+      <h3 class="feature-title">Code Preview</h3>
+      <p class="feature-desc">Post HTML, CSS or JavaScript in a coding channel and get a live preview link back, rendered in an isolated sandbox. Python/Bash execution is off unless the owner opts in.</p>
+      <div class="feature-tags"><span class="tag">HTML</span><span class="tag">CSS</span><span class="tag">JS</span><span class="tag">Sandboxed</span></div>
     </div>
     <div class="feature-card">
       <div class="feature-icon"><i class="fas fa-brain"></i></div>
@@ -877,6 +863,30 @@
         <span class="tag">Leaderboard</span><span class="tag">Reactions</span><span class="tag">Scoring</span>
       </div>
     </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-robot"></i></div>
+      <h3 class="feature-title">Auto-Moderation</h3>
+      <p class="feature-desc">Block invites, links, spam, mass mentions and custom words. Escalate automatically: warn, timeout, kick or ban at a warning threshold.</p>
+      <div class="feature-tags"><span class="tag">Anti-spam</span><span class="tag">Word filter</span><span class="tag">Auto-punish</span></div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-ranking-star"></i></div>
+      <h3 class="feature-title">Leveling &amp; Rewards</h3>
+      <p class="feature-desc">Members earn XP for chatting, climb a leaderboard and unlock role rewards. Tune XP, cooldowns and announcements from the dashboard.</p>
+      <div class="feature-tags"><span class="tag">/rank</span><span class="tag">Leaderboard</span><span class="tag">Role rewards</span></div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-scroll"></i></div>
+      <h3 class="feature-title">Audit Logging</h3>
+      <p class="feature-desc">Joins, leaves, deleted and edited messages, and every moderation action — from commands, AutoMod or the dashboard — in one log channel.</p>
+      <div class="feature-tags"><span class="tag">Joins</span><span class="tag">Deletes</span><span class="tag">Mod actions</span></div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-terminal"></i></div>
+      <h3 class="feature-title">Custom Commands</h3>
+      <p class="feature-desc">Create your own <code style="color:var(--accent)">!commands</code> with replies that use the member and server name. Manage them from the dashboard.</p>
+      <div class="feature-tags"><span class="tag">!rules</span><span class="tag">Variables</span></div>
+    </div>
   </div>
 </section>
 
@@ -884,27 +894,35 @@
 <section id="commands" style="padding-top:0">
   <div class="reveal" style="margin-bottom:48px;">
     <p class="section-eyebrow">Slash Commands</p>
-    <h2 class="section-title">30+ powerful commands</h2>
+    <h2 class="section-title">39 slash commands</h2>
     <p class="section-sub">All commands use Discord's native slash command system — autocomplete, no prefix needed.</p>
   </div>
 
   <div class="commands-grid reveal">
-    <div class="cmd-card"><div class="cmd-name">ban</div><div class="cmd-desc">Permanently ban a member with optional reason</div></div>
+    <div class="cmd-card"><div class="cmd-name">ban</div><div class="cmd-desc">Ban a member, with optional reason</div></div>
+    <div class="cmd-card"><div class="cmd-name">unban</div><div class="cmd-desc">Unban a user by ID</div></div>
     <div class="cmd-card"><div class="cmd-name">kick</div><div class="cmd-desc">Remove a member from the server</div></div>
-    <div class="cmd-card"><div class="cmd-name">warn</div><div class="cmd-desc">Issue a formal warning, logged to the database</div></div>
-    <div class="cmd-card"><div class="cmd-name">timeout</div><div class="cmd-desc">Mute a member for a specified duration</div></div>
-    <div class="cmd-card"><div class="cmd-name">warnings</div><div class="cmd-desc">View all warnings for a member</div></div>
-    <div class="cmd-card"><div class="cmd-name">clear</div><div class="cmd-desc">Bulk delete messages in a channel</div></div>
-    <div class="cmd-card"><div class="cmd-name">ticket setup</div><div class="cmd-desc">Configure the support ticket system</div></div>
-    <div class="cmd-card"><div class="cmd-name">community setup</div><div class="cmd-desc">Deploy the community access ticket button</div></div>
-    <div class="cmd-card"><div class="cmd-name">welcome</div><div class="cmd-desc">Set the welcome channel and message template</div></div>
-    <div class="cmd-card"><div class="cmd-name">starboard</div><div class="cmd-desc">Configure starboard channel, emoji, and threshold</div></div>
-    <div class="cmd-card"><div class="cmd-name">giveaway start</div><div class="cmd-desc">Launch a timed giveaway with prize and winners</div></div>
-    <div class="cmd-card"><div class="cmd-name">rolemenu</div><div class="cmd-desc">Create interactive reaction role menus</div></div>
-    <div class="cmd-card"><div class="cmd-name">quiz create</div><div class="cmd-desc">Post a reaction-based quiz question</div></div>
-    <div class="cmd-card"><div class="cmd-name">quiz leaderboard</div><div class="cmd-desc">Show top quiz scorers in the server</div></div>
-    <div class="cmd-card"><div class="cmd-name">code run</div><div class="cmd-desc">Execute code in JavaScript, Python, or Bash</div></div>
-    <div class="cmd-card"><div class="cmd-name">suggest</div><div class="cmd-desc">Submit a suggestion to the suggestions channel</div></div>
+    <div class="cmd-card"><div class="cmd-name">timeout</div><div class="cmd-desc">Mute a member for up to 28 days</div></div>
+    <div class="cmd-card"><div class="cmd-name">warn</div><div class="cmd-desc">Issue a warning (auto-punish at your threshold)</div></div>
+    <div class="cmd-card"><div class="cmd-name">warnings</div><div class="cmd-desc">View a member's warning history</div></div>
+    <div class="cmd-card"><div class="cmd-name">clear</div><div class="cmd-desc">Bulk delete up to 100 messages</div></div>
+    <div class="cmd-card"><div class="cmd-name">lock</div><div class="cmd-desc">Lock a channel for @everyone</div></div>
+    <div class="cmd-card"><div class="cmd-name">slowmode</div><div class="cmd-desc">Set a channel's slowmode</div></div>
+    <div class="cmd-card"><div class="cmd-name">role give</div><div class="cmd-desc">Give or remove a role</div></div>
+    <div class="cmd-card"><div class="cmd-name">rank</div><div class="cmd-desc">Show your level and XP</div></div>
+    <div class="cmd-card"><div class="cmd-name">leaderboard</div><div class="cmd-desc">Top members by XP</div></div>
+    <div class="cmd-card"><div class="cmd-name">giveaway</div><div class="cmd-desc">Timed giveaway with multiple winners</div></div>
+    <div class="cmd-card"><div class="cmd-name">poll</div><div class="cmd-desc">Reaction poll with optional end time</div></div>
+    <div class="cmd-card"><div class="cmd-name">announce</div><div class="cmd-desc">Send an announcement embed</div></div>
+    <div class="cmd-card"><div class="cmd-name">rolemenu</div><div class="cmd-desc">Create reaction-role menus</div></div>
+    <div class="cmd-card"><div class="cmd-name">ticket setup</div><div class="cmd-desc">Post the support ticket panel</div></div>
+    <div class="cmd-card"><div class="cmd-name">community-ticket setup</div><div class="cmd-desc">Post the community access panel</div></div>
+    <div class="cmd-card"><div class="cmd-name">setup-welcome</div><div class="cmd-desc">Set welcome channel and message</div></div>
+    <div class="cmd-card"><div class="cmd-name">customcmd</div><div class="cmd-desc">Create your own !commands</div></div>
+    <div class="cmd-card"><div class="cmd-name">quiz</div><div class="cmd-desc">Post a reaction-based quiz question</div></div>
+    <div class="cmd-card"><div class="cmd-name">suggest</div><div class="cmd-desc">Submit a suggestion</div></div>
+    <div class="cmd-card"><div class="cmd-name">dashboard</div><div class="cmd-desc">Get the web dashboard link</div></div>
+    <div class="cmd-card"><div class="cmd-name">help</div><div class="cmd-desc">Show every command</div></div>
   </div>
 </section>
 
@@ -920,7 +938,7 @@
       <div class="dash-dot r"></div>
       <div class="dash-dot y"></div>
       <div class="dash-dot g"></div>
-      <div class="dash-url">phinex-bot.onrender.com/dashboard</div>
+      <div class="dash-url">your-bot.onrender.com/dashboard</div>
     </div>
     <div class="dash-preview-body">
       <div class="mock-sidebar">
@@ -962,19 +980,19 @@
     <div class="step">
       <div class="step-num">01</div>
       <h3 class="step-title">Add PhineX to your server</h3>
-      <p class="step-desc">Click "Add to Discord", select your server, and grant the requested permissions. PhineX registers all slash commands automatically.</p>
+      <p class="step-desc">Click "Add to Discord", pick your server and authorize. You're sent straight back to the dashboard once the bot has joined.</p>
       <div class="step-arrow"><i class="fas fa-chevron-right"></i></div>
     </div>
     <div class="step">
       <div class="step-num">02</div>
       <h3 class="step-title">Open the Dashboard</h3>
-      <p class="step-desc">Log in with Discord at the dashboard URL. Select your server from the grid and configure every feature through the settings panel.</p>
+      <p class="step-desc">Log in with Discord, pick a server (or add the bot to one) and configure every feature from the settings panels.</p>
       <div class="step-arrow"><i class="fas fa-chevron-right"></i></div>
     </div>
     <div class="step">
       <div class="step-num">03</div>
       <h3 class="step-title">You're live</h3>
-      <p class="step-desc">Changes apply instantly. Run <code style="color:var(--accent);font-size:13px;">/ticket setup</code> and <code style="color:var(--accent);font-size:13px;">/community setup</code> to activate the ticketing and community systems.</p>
+      <p class="step-desc">Changes apply instantly. Post your ticket panels from the dashboard, or run <code style="color:var(--accent);font-size:13px;">/ticket setup</code> in Discord.</p>
     </div>
   </div>
 </section>
@@ -985,10 +1003,10 @@
     <h2 class="cta-title">Ready to upgrade your server?</h2>
     <p class="cta-sub">Join hundreds of communities already using PhineX to manage, moderate, and engage their members.</p>
     <div class="cta-actions">
-      <a href="https://discord.com/api/oauth2/authorize?client_id=1488586644821905458&permissions=8&scope=bot%20applications.commands" target="_blank" class="btn-add">
-        <i class="fab fa-discord"></i> Add to Discord — It's Free
+      <a href="/invite" class="btn-add">
+        <i class="fab fa-discord"></i> Add to Discord, it's free
       </a>
-      <a href="dashboard.html" class="btn-dash">
+      <a href="/dashboard" class="btn-dash">
         <i class="fas fa-th-large"></i> Go to Dashboard
       </a>
     </div>
@@ -999,10 +1017,10 @@
   <div class="footer-brand">Phine<span>X</span> Bot</div>
   <div class="footer-links">
     <a href="https://github.com/phinex-org/PhineX-Bot" target="_blank" class="footer-link"><i class="fab fa-github"></i> GitHub</a>
-    <a href="https://discord.com/api/oauth2/authorize?client_id=1488586644821905458&permissions=8&scope=bot%20applications.commands" target="_blank" class="footer-link"><i class="fab fa-discord"></i> Add Bot</a>
-    <a href="dashboard.html" class="footer-link">Dashboard</a>
+    <a href="/invite" class="footer-link"><i class="fab fa-discord"></i> Add Bot</a>
+    <a href="/dashboard" class="footer-link">Dashboard</a>
   </div>
-  <div class="footer-copy">© 2025 PhineX Org. MIT License.</div>
+  <div class="footer-copy">© 2026 PhineX Org. MIT License.</div>
 </footer>
 
 <script>

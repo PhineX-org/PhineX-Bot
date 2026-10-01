@@ -1,1227 +1,798 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PhineX Dashboard</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg:        #07080d;
-      --bg2:       #0d0f18;
-      --bg3:       #131620;
-      --card:      #0f1119;
-      --card2:     #13161f;
-      --border:    #1c1f2e;
-      --border2:   #252840;
-      --accent:    #2de08a;
-      --accent2:   #1aab67;
-      --accentDim: rgba(45,224,138,0.07);
-      --accentGlow:rgba(45,224,138,0.18);
-      --text:      #e4e7f0;
-      --text2:     #8b90a8;
-      --text3:     #555a72;
-      --red:       #f04747;
-      --redDim:    rgba(240,71,71,0.1);
-      --gold:      #faa61a;
-      --goldDim:   rgba(250,166,26,0.1);
-      --blue:      #5865f2;
-      --blueDim:   rgba(88,101,242,0.12);
-      --r:         10px;
-      --sidebar-w: 240px;
-      --header-h:  60px;
-    }
-    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-    html{scroll-behavior:smooth;}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(45,224,138,0.02)1px,transparent 1px),linear-gradient(90deg,rgba(45,224,138,0.02)1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
-    h1,h2,h3,h4,h5{font-family:'Syne',sans-serif;line-height:1.2;}
-    input,select,textarea,button{font-family:'DM Sans',sans-serif;}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhineX Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080d;--bg2:#0d0f18;--bg3:#131620;--card:#0f1119;--border:#1c1f2e;--border2:#2a2e47;--accent:#2de08a;--accent2:#1aab67;--dim:rgba(45,224,138,.08);--glow:rgba(45,224,138,.18);--text:#e4e7f0;--text2:#8b90a8;--text3:#5a5f78;--red:#f04747;--gold:#faa61a;--blue:#5865f2;--sb:248px;--hh:60px}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(45,224,138,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(45,224,138,.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+h1,h2,h3,h4{font-family:'Syne',sans-serif;line-height:1.2}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+code{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:.85em;color:var(--accent)}
+[hidden]{display:none!important}
 
-    /* ─── HEADER ────────────────────────────────────────────── */
-    .header{position:fixed;top:0;left:0;right:0;height:var(--header-h);z-index:200;background:rgba(7,8,13,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;}
-    .header-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:8px;}
-    .header-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#000;box-shadow:0 0 16px var(--accentGlow);}
-    .header-logo-text{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text);letter-spacing:-0.5px;}
-    .header-logo-text span{color:var(--accent);}
-    .header-server{display:flex;align-items:center;gap:10px;padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color 0.2s;}
-    .header-server:hover{border-color:var(--border2);}
-    .header-server-icon{width:28px;height:28px;border-radius:6px;object-fit:cover;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;}
-    .header-server-name{font-size:13px;font-weight:600;color:var(--text);}
-    .header-server i{font-size:11px;color:var(--text3);}
-    .header-spacer{flex:1;}
-    .header-user{display:flex;align-items:center;gap:10px;}
-    .header-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#000;overflow:hidden;}
-    .header-avatar img{width:100%;height:100%;object-fit:cover;}
-    .header-username{font-size:13px;font-weight:600;color:var(--text);}
-    .btn-logout-sm{padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text3);font-size:12px;cursor:pointer;transition:all 0.2s;}
-    .btn-logout-sm:hover{border-color:var(--red);color:var(--red);}
+/* header */
+.header{position:fixed;inset:0 0 auto 0;height:var(--hh);z-index:200;background:rgba(7,8,13,.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.logo-i{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:grid;place-items:center;color:#000;font-size:16px;box-shadow:0 0 16px var(--glow)}
+.logo-t{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:-.5px}.logo-t span{color:var(--accent)}
+.grow{flex:1}
+.chip{display:flex;align-items:center;gap:9px;padding:5px 11px 5px 6px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;max-width:230px}
+.chip:hover{border-color:var(--border2)}.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.plain{cursor:default;padding-left:5px}
+.av{width:26px;height:26px;border-radius:50%;background:var(--accent2);color:#000;display:grid;place-items:center;font-size:11px;font-weight:700;object-fit:cover;flex-shrink:0;overflow:hidden}
+.av.sq{border-radius:7px}.av.lg{width:44px;height:44px;font-size:15px}.av.xl{width:64px;height:64px;font-size:20px;border-radius:14px}
+.hamb{display:none;background:none;border:0;color:var(--text2);font-size:18px;cursor:pointer;padding:6px}
 
-    /* ─── LAYOUT ────────────────────────────────────────────── */
-    .layout{display:flex;padding-top:var(--header-h);min-height:100vh;position:relative;z-index:1;}
-    .sidebar{position:fixed;top:var(--header-h);left:0;width:var(--sidebar-w);height:calc(100vh - var(--header-h));overflow-y:auto;background:var(--bg2);border-right:1px solid var(--border);padding:20px 12px;z-index:100;}
-    .sidebar::-webkit-scrollbar{width:4px;}
-    .sidebar::-webkit-scrollbar-track{background:transparent;}
-    .sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-    .main{margin-left:var(--sidebar-w);flex:1;padding:32px;min-height:calc(100vh - var(--header-h));}
+/* screens */
+.screen{display:none;position:relative;z-index:1}.screen.on{display:block}
+#s-login{min-height:100vh;place-items:center;text-align:center;padding:30px}#s-login.on{display:grid}
+.hero-logo{width:72px;height:72px;margin:0 auto 22px;border-radius:18px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:grid;place-items:center;font-size:32px;color:#000;box-shadow:0 0 40px var(--glow)}
+.hero h1{font-size:40px;font-weight:800;letter-spacing:-1px;margin-bottom:10px}.hero p{color:var(--text2);max-width:420px;margin:0 auto 26px}
+#s-servers{padding:calc(var(--hh) + 34px) 32px 50px;max-width:1200px;margin:0 auto}
+.top-row{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.top-row h1{font-size:30px;font-weight:800;letter-spacing:-.6px}.top-row p{color:var(--text2);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.sv{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:.2s;position:relative;overflow:hidden;text-align:left;width:100%}
+.sv:hover{transform:translateY(-3px);border-color:var(--border2);box-shadow:0 14px 34px rgba(0,0,0,.35)}
+.sv.has::before{content:'';position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+.sv .av{margin-bottom:14px}.sv-name{font-weight:700;font-size:15px;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-act{margin-top:14px;font-size:12px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px}.sv:not(.has) .sv-act{color:#8c96ff}
 
-    /* ─── SIDEBAR NAV ───────────────────────────────────────── */
-    .nav-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding:0 8px;margin:16px 0 6px;}
-    .nav-section-label:first-child{margin-top:0;}
-    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.18s;border:1px solid transparent;margin-bottom:1px;}
-    .nav-item:hover{background:var(--bg3);color:var(--text);}
-    .nav-item.active{background:var(--accentDim);color:var(--accent);border-color:rgba(45,224,138,0.12);}
-    .nav-item i{width:16px;font-size:13px;text-align:center;}
-    .nav-badge{margin-left:auto;padding:1px 6px;background:var(--red);border-radius:99px;font-size:10px;font-weight:700;color:#fff;}
+/* layout */
+.layout{display:flex;padding-top:var(--hh);min-height:100vh}
+.sidebar{position:fixed;top:var(--hh);left:0;bottom:0;width:var(--sb);background:var(--bg2);border-right:1px solid var(--border);padding:18px 12px;overflow-y:auto;z-index:100;transition:transform .25s}
+.sidebar::-webkit-scrollbar{width:4px}.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.nav-l{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text3);padding:0 9px;margin:16px 0 6px}.nav-l:first-child{margin-top:0}
+.nav{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:8px;border:1px solid transparent;background:none;color:var(--text2);font-size:13.5px;font-weight:500;cursor:pointer;text-align:left;transition:.15s;margin-bottom:1px}
+.nav:hover{background:var(--bg3);color:var(--text)}.nav.on{background:var(--dim);color:var(--accent);border-color:rgba(45,224,138,.14)}.nav i{width:16px;text-align:center;font-size:13px}
+.main{margin-left:var(--sb);flex:1;padding:30px 34px 60px;min-width:0;max-width:1100px;position:relative;z-index:1}
+.ph{margin-bottom:24px}.ph h1{font-size:26px;font-weight:800;letter-spacing:-.5px}.ph p{color:var(--text2);font-size:14px;margin-top:3px}
+.panel-in{animation:up .3s ease}@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
-    /* ─── PANELS ────────────────────────────────────────────── */
-    .panel{display:none;animation:fadeIn 0.35s ease;}
-    .panel.active{display:block;}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
-    .panel-header{margin-bottom:28px;}
-    .panel-title{font-size:26px;font-weight:800;color:var(--text);letter-spacing:-0.5px;margin-bottom:6px;}
-    .panel-sub{font-size:14px;color:var(--text2);}
+/* cards & forms */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:18px}
+.card>h3{font-size:15px;margin-bottom:3px}.card>.sub{font-size:13px;color:var(--text2);margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}.stat small{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.stat b{font-family:'Syne',sans-serif;font-size:26px;font-weight:800}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;min-width:0}.field>label,.lbl{font-size:11.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text2)}
+.hint{font-size:12px;color:var(--text3)}
+.input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13.5px;outline:none;transition:border-color .15s}
+.input:focus{border-color:var(--accent)}select.input option{background:var(--bg3)}textarea.input{resize:vertical;min-height:88px;line-height:1.5}
+input[type=color].input{padding:3px 5px;height:40px;cursor:pointer}
+.actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border-radius:8px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn.primary{background:var(--accent);color:#000}.btn.primary:hover{background:#3df598;transform:translateY(-1px);box-shadow:0 4px 16px var(--glow)}
+.btn.ghost{background:var(--bg3);border-color:var(--border);color:var(--text2)}.btn.ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn.danger{background:rgba(240,71,71,.1);color:var(--red);border-color:rgba(240,71,71,.22)}.btn.danger:hover{background:rgba(240,71,71,.2)}
+.btn.warn{background:rgba(250,166,26,.1);color:var(--gold);border-color:rgba(250,166,26,.22)}.btn.warn:hover{background:rgba(250,166,26,.2)}
+.btn.discord{background:var(--blue);color:#fff;padding:13px 22px;font-size:14.5px;width:100%}.btn.discord:hover{background:#4752c4}
+.btn.sm{padding:6px 11px;font-size:12px}.btn:disabled,.btn.busy{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.btn.busy::after{content:'';width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--border);cursor:pointer}.toggle-row:last-of-type{border-bottom:0}
+.t-title{font-weight:600;font-size:14px}.t-desc{font-size:12px;color:var(--text3);margin-top:1px}
+.switch{position:relative;width:40px;height:22px;flex-shrink:0}.switch input{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;z-index:1;margin:0}
+.switch i{position:absolute;inset:0;background:var(--border2);border-radius:11px;transition:.2s}.switch i::after{content:'';position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.switch input:checked+i{background:var(--accent)}.switch input:checked+i::after{transform:translateX(18px)}
+.checklist{background:var(--bg3);border:1px solid var(--border);border-radius:8px}.checklist summary{padding:10px 12px;font-size:13.5px;cursor:pointer;color:var(--text2)}
+.cl-body{max-height:180px;overflow:auto;padding:4px 12px 10px;display:grid;gap:2px;border-top:1px solid var(--border)}.cl-body label{display:flex;gap:8px;align-items:center;font-size:13px;padding:3px 0;cursor:pointer}
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border)}.tab{background:none;border:0;border-bottom:2px solid transparent;padding:9px 14px;font-weight:600;font-size:13.5px;color:var(--text2);cursor:pointer}.tab.on{color:var(--accent);border-color:var(--accent)}
 
-    /* ─── CARDS ─────────────────────────────────────────────── */
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
-    .card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;}
-    .card-sub{font-size:13px;color:var(--text2);margin-bottom:20px;}
-    .card-divider{height:1px;background:var(--border);margin:20px 0;}
+/* tables / lists */
+.tw{overflow-x:auto;border:1px solid var(--border);border-radius:10px}table{width:100%;border-collapse:collapse}
+th{background:var(--bg3);padding:10px 14px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);white-space:nowrap}
+td{padding:11px 14px;font-size:13px;color:var(--text2);border-top:1px solid var(--border);vertical-align:middle}.td-m{color:var(--text);font-weight:600}
+.who{display:flex;align-items:center;gap:9px;min-width:0}.who small{display:block;color:var(--text3);font-size:11px}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:5px;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+.b-green{background:var(--dim);color:var(--accent);border-color:rgba(45,224,138,.2)}.b-red{background:rgba(240,71,71,.1);color:var(--red);border-color:rgba(240,71,71,.22)}.b-gold{background:rgba(250,166,26,.1);color:var(--gold);border-color:rgba(250,166,26,.22)}.b-blue{background:rgba(88,101,242,.12);color:#8c96ff;border-color:rgba(88,101,242,.25)}
+.row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;margin-bottom:8px}.row .nm{flex:1;min-width:0;font-weight:500;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row small{color:var(--text3);font-size:12px}
+.dot{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+.mres{display:grid;gap:8px;margin-top:14px}.mres .row{cursor:pointer;margin:0}.mres .row:hover{border-color:var(--accent)}
+.empty{text-align:center;padding:38px 16px;color:var(--text3);font-size:14px}.empty i{display:block;font-size:30px;margin-bottom:10px;color:var(--border2)}
+.note{display:flex;gap:12px;padding:14px 16px;border-radius:10px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)}.note i{margin-top:2px}
+.note.warn{background:rgba(250,166,26,.07);border-color:rgba(250,166,26,.25);color:#e9bf72}.note.warn i{color:var(--gold)}
+.note.ok{background:var(--dim);border-color:rgba(45,224,138,.2);color:#8fe9bd}.note.ok i{color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.rchip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;background:var(--bg);border:1px solid var(--border)}
+.mhead{display:flex;gap:16px;align-items:center;margin-bottom:16px;flex-wrap:wrap}.mhead h3{font-size:20px}
+.embed{display:flex;border-radius:6px;background:#2b2d31;max-width:480px;overflow:hidden}.embed-bar{width:4px;flex-shrink:0}.embed-b{padding:10px 14px 12px;min-width:0}
+.embed-t{font-weight:700;font-size:15px;color:#fff;margin-bottom:4px;word-break:break-word}.embed-d{font-size:14px;color:#dbdee1;white-space:pre-wrap;word-break:break-word}.embed-f{font-size:12px;color:#949ba4;margin-top:8px}.embed img{max-width:100%;border-radius:4px;margin-top:8px;display:block}
+.rew{display:grid;grid-template-columns:110px 1fr auto;gap:10px;margin-bottom:8px}
 
-    /* ─── STAT CARDS ────────────────────────────────────────── */
-    .stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
-    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;}
-    .stat-card-label{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
-    .stat-card-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text);letter-spacing:-0.5px;}
-    .stat-card-value.green{color:var(--accent);}
-    .stat-card-value.red{color:var(--red);}
-    .stat-card-value.gold{color:var(--gold);}
-    .stat-card-value.blue{color:var(--blue);}
+/* modal / toast */
+#modal{position:fixed;inset:0;z-index:900;display:none;align-items:center;justify-content:center;padding:20px}#modal.open{display:flex}
+.modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.66);backdrop-filter:blur(5px)}
+.modal-card{position:relative;background:var(--card);border:1px solid var(--border2);border-radius:18px;padding:34px 30px;width:100%;max-width:430px;box-shadow:0 30px 90px rgba(0,0,0,.6);text-align:center;animation:pop .22s ease}
+@keyframes pop{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+.modal-card h2{font-size:22px;font-weight:800;margin:14px 0 8px}.modal-card p{color:var(--text2);font-size:14px;margin-bottom:20px}.modal-card .sm-txt{font-size:12px;color:var(--text3);margin:16px 0 0}
+.m-ico{width:58px;height:58px;border-radius:16px;margin:0 auto;display:grid;place-items:center;font-size:24px;background:var(--dim);color:var(--accent)}.m-ico.blue{background:rgba(88,101,242,.15);color:#8c96ff}.m-ico.red{background:rgba(240,71,71,.12);color:var(--red)}
+.spinner{width:34px;height:34px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}@keyframes spin{to{transform:rotate(360deg)}}
+.steps{text-align:left;margin:0 0 20px;padding:0;list-style:none}.steps li{display:flex;gap:10px;align-items:center;padding:7px 0;font-size:13.5px;color:var(--text3)}.steps li.done{color:var(--accent)}.steps li.now{color:var(--text)}.steps i{width:18px;text-align:center}
+.mbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.mbtns .btn{flex:1}
+.toast{position:fixed;right:22px;bottom:22px;z-index:1000;max-width:380px;padding:12px 16px;border-radius:10px;font-size:13.5px;font-weight:600;transform:translateY(16px);opacity:0;transition:.25s;pointer-events:none;backdrop-filter:blur(10px)}
+.toast.show{transform:none;opacity:1}.toast.success{background:rgba(45,224,138,.15);border:1px solid rgba(45,224,138,.35);color:var(--accent)}.toast.error{background:rgba(240,71,71,.15);border:1px solid rgba(240,71,71,.35);color:#ff8585}.toast.info{background:rgba(88,101,242,.16);border:1px solid rgba(88,101,242,.35);color:#a3abff}
+.loading{display:grid;place-items:center;gap:14px;padding:70px 20px;color:var(--text3);font-size:14px}
 
-    /* ─── FORMS ─────────────────────────────────────────────── */
-    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
-    .form-row.single{grid-template-columns:1fr;}
-    .form-group{display:flex;flex-direction:column;gap:6px;}
-    .form-label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;}
-    .form-input,.form-select,.form-textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);transition:border-color 0.2s;outline:none;}
-    .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
-    .form-select option{background:var(--bg3);}
-    .form-textarea{resize:vertical;min-height:90px;line-height:1.5;}
-    .form-hint{font-size:11px;color:var(--text3);margin-top:2px;}
-    .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;}
-
-    /* ─── BUTTONS ───────────────────────────────────────────── */
-    .btn{padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:7px;font-family:'DM Sans',sans-serif;}
-    .btn-primary{background:var(--accent);color:#000;}
-    .btn-primary:hover{background:#3df598;transform:translateY(-1px);box-shadow:0 4px 14px var(--accentGlow);}
-    .btn-secondary{background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
-    .btn-secondary:hover{border-color:var(--border2);color:var(--text);}
-    .btn-danger{background:var(--redDim);color:var(--red);border:1px solid rgba(240,71,71,0.2);}
-    .btn-danger:hover{background:rgba(240,71,71,0.18);}
-    .btn-warn{background:var(--goldDim);color:var(--gold);border:1px solid rgba(250,166,26,0.2);}
-    .btn-warn:hover{background:rgba(250,166,26,0.18);}
-    .btn-sm{padding:6px 12px;font-size:12px;}
-    .btn-xs{padding:4px 9px;font-size:11px;}
-    .btn:disabled{opacity:0.45;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
-
-    /* ─── TABLE ─────────────────────────────────────────────── */
-    .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
-    table{width:100%;border-collapse:collapse;}
-    thead tr{background:var(--bg3);border-bottom:1px solid var(--border);}
-    th{padding:10px 14px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;text-align:left;white-space:nowrap;}
-    td{padding:12px 14px;font-size:13px;color:var(--text2);border-bottom:1px solid var(--border);}
-    tbody tr:last-child td{border-bottom:none;}
-    tbody tr:hover td{background:rgba(255,255,255,0.01);}
-    .td-main{color:var(--text);font-weight:500;}
-
-    /* ─── BADGES ────────────────────────────────────────────── */
-    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;}
-    .badge-green{background:var(--accentDim);color:var(--accent);}
-    .badge-red{background:var(--redDim);color:var(--red);}
-    .badge-gold{background:var(--goldDim);color:var(--gold);}
-    .badge-blue{background:var(--blueDim);color:var(--blue);}
-    .badge-gray{background:var(--bg3);color:var(--text3);border:1px solid var(--border);}
-    .badge .dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
-
-    /* ─── USER LOOKUP ───────────────────────────────────────── */
-    .lookup-row{display:flex;gap:10px;margin-bottom:16px;}
-    .lookup-input{flex:1;}
-    .action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-
-    /* ─── ROLES / CHANNELS LIST ─────────────────────────────── */
-    .items-list{display:flex;flex-direction:column;gap:8px;}
-    .item-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;}
-    .item-color{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
-    .item-name{flex:1;font-size:13px;font-weight:500;color:var(--text);}
-    .item-meta{font-size:12px;color:var(--text3);}
-
-    /* ─── TICKET STATS ──────────────────────────────────────── */
-    .ticket-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
-    .ticket-stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;}
-    .ticket-stat-header{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:12px;}
-    .ticket-stat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;}
-    .ticket-stat-label{color:var(--text2);}
-    .ticket-stat-value{font-weight:700;color:var(--text);}
-
-    /* ─── MODERATION LOG TYPE BADGES ────────────────────────── */
-    .log-ban{color:var(--red);}
-    .log-kick{color:var(--gold);}
-    .log-warn{color:#a78bfa;}
-    .log-timeout{color:var(--blue);}
-
-    /* ─── TOAST ─────────────────────────────────────────────── */
-    .toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;transform:translateY(20px);opacity:0;transition:all 0.3s;pointer-events:none;backdrop-filter:blur(10px);}
-    .toast.show{transform:translateY(0);opacity:1;}
-    .toast.success{background:rgba(45,224,138,0.15);border:1px solid rgba(45,224,138,0.3);color:var(--accent);}
-    .toast.error{background:rgba(240,71,71,0.15);border:1px solid rgba(240,71,71,0.3);color:var(--red);}
-    .toast.info{background:rgba(88,101,242,0.15);border:1px solid rgba(88,101,242,0.3);color:#818cf8;}
-
-    /* ─── LOADING ───────────────────────────────────────────── */
-    .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
-    @keyframes spin{to{transform:rotate(360deg);}}
-    .loading-block{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:60px 20px;color:var(--text3);font-size:14px;}
-    .skeleton{background:linear-gradient(90deg,var(--border) 25%,var(--border2) 50%,var(--border) 75%);background-size:400%;animation:shimmer 1.5s infinite;border-radius:6px;}
-    @keyframes shimmer{0%{background-position:200%;}100%{background-position:-200%;}}
-
-    /* ─── EMPTY ─────────────────────────────────────────────── */
-    .empty{text-align:center;padding:48px 20px;}
-    .empty-icon{font-size:40px;color:var(--border2);margin-bottom:12px;}
-    .empty-text{font-size:14px;color:var(--text3);}
-
-    /* ─── SCREENS ───────────────────────────────────────────── */
-    #loginScreen,#serverScreen,#dashScreen{display:none;position:relative;z-index:1;}
-    #loginScreen.active,#serverScreen.active,#dashScreen.active{display:block;}
-
-    /* ─── LOGIN SCREEN ──────────────────────────────────────── */
-    #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px;}
-    .login-box{max-width:440px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:56px 48px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.5);}
-    .login-logo{width:64px;height:64px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#000;margin:0 auto 24px;box-shadow:0 0 32px var(--accentGlow);}
-    .login-title{font-size:32px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px;}
-    .login-sub{font-size:14px;color:var(--text2);margin-bottom:40px;line-height:1.6;}
-    .btn-discord{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;background:var(--blue);color:#fff;font-size:15px;font-weight:700;border:none;border-radius:10px;cursor:pointer;text-decoration:none;transition:all 0.25s;font-family:'DM Sans',sans-serif;}
-    .btn-discord:hover{background:#4752c4;transform:translateY(-2px);box-shadow:0 8px 24px rgba(88,101,242,0.3);}
-    .login-note{font-size:12px;color:var(--text3);margin-top:20px;line-height:1.6;}
-
-    /* ─── SERVER SCREEN ─────────────────────────────────────── */
-    #serverScreen{padding:0;}
-    .server-header{padding:32px 40px 0;}
-    .server-title{font-size:26px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px;}
-    .server-sub{font-size:14px;color:var(--text2);margin-bottom:32px;}
-    .server-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;padding:0 40px 40px;}
-    .server-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden;}
-    .server-card:hover{border-color:var(--border2);background:var(--card2);transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,0.3);}
-    .server-card.has-bot:hover{border-color:rgba(45,224,138,0.3);}
-    .server-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity 0.3s;}
-    .server-card.has-bot::before{opacity:1;}
-    .server-icon{width:56px;height:56px;border-radius:12px;object-fit:cover;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;margin-bottom:16px;overflow:hidden;}
-    .server-icon img{width:100%;height:100%;object-fit:cover;border-radius:12px;}
-    .server-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .server-status{display:flex;align-items:center;gap:6px;font-size:12px;}
-    .server-add-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:14px;padding:8px;background:var(--blueDim);border:1px solid rgba(88,101,242,0.2);border-radius:7px;color:var(--blue);font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s;}
-    .server-add-btn:hover{background:rgba(88,101,242,0.2);}
-
-    /* ─── TOGGLE ────────────────────────────────────────────── */
-    .toggle-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 0;}
-    .toggle-info .toggle-title{font-size:14px;font-weight:600;color:var(--text);}
-    .toggle-info .toggle-desc{font-size:12px;color:var(--text3);margin-top:2px;}
-    .toggle{position:relative;width:40px;height:22px;cursor:pointer;}
-    .toggle input{opacity:0;width:0;height:0;}
-    .toggle-slider{position:absolute;inset:0;background:var(--border2);border-radius:11px;transition:background 0.2s;}
-    .toggle-slider::before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;left:3px;top:3px;transition:transform 0.2s;}
-    .toggle input:checked + .toggle-slider{background:var(--accent);}
-    .toggle input:checked + .toggle-slider::before{transform:translateX(18px);}
-
-    /* ─── SOCIAL LINKS ──────────────────────────────────────── */
-    .social-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
-    .social-item{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
-    .social-icon{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
-    .social-label{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:0.3px;}
-    .social-input{width:100%;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);padding:0;}
-    .social-input::placeholder{color:var(--text3);}
-
-    /* ─── CONFIRM DIALOG ────────────────────────────────────── */
-    .dialog-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center;}
-    .dialog-overlay.active{display:flex;}
-    .dialog{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:32px;max-width:420px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,0.5);}
-    .dialog-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;}
-    .dialog-icon.danger{background:var(--redDim);color:var(--red);}
-    .dialog-title{font-size:18px;font-weight:700;margin-bottom:8px;}
-    .dialog-text{font-size:14px;color:var(--text2);margin-bottom:6px;line-height:1.5;}
-    .dialog-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);margin:12px 0;outline:none;}
-    .dialog-input:focus{border-color:var(--accent);}
-    .dialog-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
-
-    /* ─── RESPONSIVE ────────────────────────────────────────── */
-    @media(max-width:860px){
-      .sidebar{transform:translateX(-100%);transition:transform 0.3s;}
-      .sidebar.open{transform:translateX(0);}
-      .main{margin-left:0;}
-      .form-row{grid-template-columns:1fr;}
-      .action-grid{grid-template-columns:1fr 1fr;}
-      .server-grid{padding:0 20px 40px;}
-      .server-header{padding:24px 20px 0;}
-      .ticket-stats-grid{grid-template-columns:1fr;}
-      .social-grid{grid-template-columns:1fr;}
-    }
-  </style>
+@media(max-width:900px){.hamb{display:block}.sidebar{transform:translateX(-100%)}.sidebar.open{transform:none;box-shadow:10px 0 40px rgba(0,0,0,.5)}.main{margin-left:0;padding:22px 16px 50px}.g2,.g3{grid-template-columns:1fr}#s-servers{padding:calc(var(--hh) + 22px) 16px 40px}.hero h1{font-size:30px}.chip.user span{display:none}}
+</style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div class="login-box">
-    <div class="login-logo">⚡</div>
-    <h1 class="login-title">PhineX Dashboard</h1>
-    <p class="login-sub">Log in with Discord to manage your servers and configure every feature from one place.</p>
-    <a id="discordLoginBtn" href="#" target="_blank" class="btn-discord">
-      <i class="fab fa-discord" style="font-size:18px;"></i>
-      Login with Discord
-    </a>
-    <p class="login-note">You will be redirected to Discord to authorise PhineX.<br>Only servers where you have <strong style="color:var(--text2)">Manage Server</strong> permission will appear.</p>
+<!-- LOGIN (modal opens over this) -->
+<div class="screen hero" id="s-login">
+  <div>
+    <div class="hero-logo">⚡</div>
+    <h1>PhineX Dashboard</h1>
+    <p>Log in with Discord to manage your servers. No commands needed.</p>
+    <button class="btn primary" data-act="login"><i class="fab fa-discord"></i> Login with Discord</button>
   </div>
 </div>
 
-<!-- SERVER SELECTOR -->
-<div id="serverScreen">
-  <div class="header" id="serverHeader">
-    <a href="/" class="header-logo">
-      <div class="header-logo-icon">⚡</div>
-      <span class="header-logo-text">Phine<span>X</span></span>
-    </a>
-    <div class="header-spacer"></div>
-    <div class="header-user">
-      <div class="header-avatar" id="headerAvatar"></div>
-      <span class="header-username" id="headerUsername"></span>
-      <button class="btn-logout-sm" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
-    </div>
+<!-- SERVER PICKER -->
+<div class="screen" id="s-servers">
+  <header class="header">
+    <a class="logo" href="/"><span class="logo-i">⚡</span><span class="logo-t">Phine<span>X</span></span></a>
+    <div class="grow"></div>
+    <div class="chip plain user" data-user></div>
+    <button class="btn ghost sm" data-act="logout"><i class="fas fa-right-from-bracket"></i> Logout</button>
+  </header>
+  <div class="top-row">
+    <div class="grow"><h1>Select a server</h1><p>Servers where you have <b>Manage Server</b>. Pick one without PhineX to add the bot.</p></div>
+    <input class="input" id="serverSearch" placeholder="Search servers…" style="max-width:240px">
+    <button class="btn ghost" data-act="refresh-guilds"><i class="fas fa-rotate"></i> Refresh</button>
   </div>
-  <div style="padding-top:60px;">
-    <div class="server-header">
-      <h1 class="server-title">Select a Server</h1>
-      <p class="server-sub">Choose a server to manage. Only servers where you have Manage Server permission are shown.</p>
-    </div>
-    <div class="server-grid" id="serverGrid">
-      <div class="loading-block"><div class="spinner"></div><span>Loading your servers…</span></div>
-    </div>
-  </div>
+  <div class="grid" id="serverGrid"></div>
 </div>
 
 <!-- DASHBOARD -->
-<div id="dashScreen">
-  <div class="header">
-    <a href="/" class="header-logo">
-      <div class="header-logo-icon">⚡</div>
-      <span class="header-logo-text">Phine<span>X</span></span>
-    </a>
-    <div class="header-server" id="headerServer" onclick="goBack()">
-      <div class="header-server-icon" id="headerServerIcon"></div>
-      <span class="header-server-name" id="headerServerName">Server</span>
-      <i class="fas fa-chevron-down"></i>
-    </div>
-    <div class="header-spacer"></div>
-    <div class="header-user">
-      <div class="header-avatar" id="dashAvatar"></div>
-      <span class="header-username" id="dashUsername"></span>
-      <button class="btn-logout-sm" id="dashLogoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
-    </div>
-  </div>
-
+<div class="screen" id="s-dash">
+  <header class="header">
+    <button class="hamb" data-act="toggle-nav" aria-label="Menu"><i class="fas fa-bars"></i></button>
+    <a class="logo" href="/"><span class="logo-i">⚡</span><span class="logo-t">Phine<span>X</span></span></a>
+    <button class="chip" data-act="to-servers" id="srvChip" title="Switch server"></button>
+    <div class="grow"></div>
+    <div class="chip plain user" data-user></div>
+    <button class="btn ghost sm" data-act="logout"><i class="fas fa-right-from-bracket"></i></button>
+  </header>
   <div class="layout">
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-      <div class="nav-section-label">Overview</div>
-      <div class="nav-item active" data-panel="overview"><i class="fas fa-th-large"></i> Overview</div>
-
-      <div class="nav-section-label">General</div>
-      <div class="nav-item" data-panel="welcome"><i class="fas fa-hand-wave"></i> Welcome</div>
-      <div class="nav-item" data-panel="suggestions"><i class="fas fa-lightbulb"></i> Suggestions</div>
-      <div class="nav-item" data-panel="starboard"><i class="fas fa-star"></i> Starboard</div>
-
-      <div class="nav-section-label">Moderation</div>
-      <div class="nav-item" data-panel="moderation"><i class="fas fa-gavel"></i> Moderation</div>
-      <div class="nav-item" data-panel="logs"><i class="fas fa-list-alt"></i> Mod Logs</div>
-      <div class="nav-item" data-panel="warnings"><i class="fas fa-triangle-exclamation"></i> Warnings</div>
-
-      <div class="nav-section-label">System</div>
-      <div class="nav-item" data-panel="tickets"><i class="fas fa-ticket-simple"></i> Tickets</div>
-      <div class="nav-item" data-panel="roles"><i class="fas fa-tags"></i> Roles</div>
-      <div class="nav-item" data-panel="channels"><i class="fas fa-hashtag"></i> Channels</div>
-      <div class="nav-item" data-panel="social"><i class="fas fa-share-nodes"></i> Social Links</div>
-    </aside>
-
-    <!-- MAIN PANELS -->
-    <main class="main">
-
-      <!-- ── OVERVIEW ─────────────────────────────────────── -->
-      <div class="panel active" id="panel-overview">
-        <div class="panel-header">
-          <h1 class="panel-title" id="overviewTitle">Server Overview</h1>
-          <p class="panel-sub">Quick glance at your server stats and bot status.</p>
-        </div>
-        <div class="stats-row" id="overviewStats">
-          <div class="stat-card"><div class="stat-card-label">Members</div><div class="stat-card-value" id="statMembers">—</div></div>
-          <div class="stat-card"><div class="stat-card-label">Text Channels</div><div class="stat-card-value blue" id="statChannels">—</div></div>
-          <div class="stat-card"><div class="stat-card-label">Roles</div><div class="stat-card-value gold" id="statRoles">—</div></div>
-          <div class="stat-card"><div class="stat-card-label">Bot Status</div><div class="stat-card-value green">Online</div></div>
-        </div>
-        <div class="card">
-          <div class="card-title">Bot is active in this server ✓</div>
-          <div class="card-sub">Use the sidebar to configure features. Changes are applied in real-time.</div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn btn-secondary btn-sm" onclick="switchPanel('moderation')"><i class="fas fa-gavel"></i> Moderation</button>
-            <button class="btn btn-secondary btn-sm" onclick="switchPanel('tickets')"><i class="fas fa-ticket-simple"></i> Tickets</button>
-            <button class="btn btn-secondary btn-sm" onclick="switchPanel('welcome')"><i class="fas fa-hand-wave"></i> Welcome</button>
-            <button class="btn btn-secondary btn-sm" onclick="switchPanel('logs')"><i class="fas fa-list-alt"></i> View Logs</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── WELCOME ─────────────────────────────────────── -->
-      <div class="panel" id="panel-welcome">
-        <div class="panel-header">
-          <h1 class="panel-title">Welcome System</h1>
-          <p class="panel-sub">Greet new members when they join your server.</p>
-        </div>
-        <div class="card">
-          <div class="card-title">Welcome Channel &amp; Message</div>
-          <div class="card-sub">Use <code style="color:var(--accent);font-size:12px;">{user}</code>, <code style="color:var(--accent);font-size:12px;">{server}</code>, <code style="color:var(--accent);font-size:12px;">{count}</code> as placeholders in your message.</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Welcome Channel</label>
-              <select class="form-select" id="welcomeChannel"></select>
-            </div>
-            <div class="form-group" style="opacity:0.5;">
-              <label class="form-label">Auto-Role (coming soon)</label>
-              <select class="form-select" disabled><option>— Select role —</option></select>
-            </div>
-          </div>
-          <div class="form-row single">
-            <div class="form-group">
-              <label class="form-label">Welcome Message</label>
-              <textarea class="form-textarea" id="welcomeMessage" placeholder="Welcome {user} to {server}! You are member #{count} 🎉"></textarea>
-              <div class="form-hint">Supports {user}, {server}, {count} placeholders</div>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="saveWelcome()"><i class="fas fa-save"></i> Save Changes</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── SUGGESTIONS ─────────────────────────────────── -->
-      <div class="panel" id="panel-suggestions">
-        <div class="panel-header">
-          <h1 class="panel-title">Suggestions</h1>
-          <p class="panel-sub">Let members submit suggestions via <code style="color:var(--accent)">/suggest</code>.</p>
-        </div>
-        <div class="card">
-          <div class="card-title">Suggestions Channel</div>
-          <div class="card-sub">New suggestions are posted here as embeds with 👍/👎 reactions.</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Channel</label>
-              <select class="form-select" id="suggestionsChannel"></select>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="saveSuggestions()"><i class="fas fa-save"></i> Save Changes</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── STARBOARD ───────────────────────────────────── -->
-      <div class="panel" id="panel-starboard">
-        <div class="panel-header">
-          <h1 class="panel-title">Starboard</h1>
-          <p class="panel-sub">Automatically highlight popular messages.</p>
-        </div>
-        <div class="card">
-          <div class="card-title">Starboard Settings</div>
-          <div class="card-sub">When a message gets enough reactions, it gets posted to the starboard channel.</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Starboard Channel</label>
-              <select class="form-select" id="starboardChannel"></select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Reaction Emoji</label>
-              <input type="text" class="form-input" id="starboardEmoji" placeholder="⭐" maxlength="8">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Minimum Stars</label>
-              <input type="number" class="form-input" id="starboardThreshold" min="1" max="99" placeholder="3">
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="saveStarboard()"><i class="fas fa-save"></i> Save Changes</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── MODERATION ──────────────────────────────────── -->
-      <div class="panel" id="panel-moderation">
-        <div class="panel-header">
-          <h1 class="panel-title">Moderation</h1>
-          <p class="panel-sub">Take action on members directly from the dashboard.</p>
-        </div>
-        <div class="card">
-          <div class="card-title">Take Action on Member</div>
-          <div class="card-sub">Enter a Discord User ID to warn, kick, or ban them.</div>
-          <div class="lookup-row">
-            <input type="text" class="form-input lookup-input" id="modUserId" placeholder="Discord User ID (e.g. 123456789012345678)">
-            <button class="btn btn-secondary" onclick="lookupUser()"><i class="fas fa-search"></i> Lookup</button>
-          </div>
-          <div id="modUserInfo" style="display:none;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;">
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;" id="modUserName">—</div>
-            <div style="font-size:12px;color:var(--text3);" id="modUserMeta">—</div>
-          </div>
-          <div class="form-row single" style="margin-bottom:12px;">
-            <div class="form-group">
-              <label class="form-label">Reason</label>
-              <input type="text" class="form-input" id="modReason" placeholder="Enter a reason…">
-            </div>
-          </div>
-          <div class="action-grid">
-            <button class="btn btn-warn" onclick="modAction('warn')"><i class="fas fa-triangle-exclamation"></i> Warn</button>
-            <button class="btn btn-danger" onclick="confirmAction('kick')"><i class="fas fa-door-open"></i> Kick</button>
-            <button class="btn btn-danger" style="background:rgba(240,71,71,0.18);" onclick="confirmAction('ban')"><i class="fas fa-ban"></i> Ban</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── MOD LOGS ────────────────────────────────────── -->
-      <div class="panel" id="panel-logs">
-        <div class="panel-header">
-          <h1 class="panel-title">Moderation Logs</h1>
-          <p class="panel-sub">All moderation actions taken in your server.</p>
-        </div>
-        <div class="card" style="padding:0;overflow:hidden;">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-size:14px;font-weight:600;">Recent Actions</span>
-            <button class="btn btn-secondary btn-sm" onclick="loadLogs()"><i class="fas fa-refresh"></i> Refresh</button>
-          </div>
-          <div id="logsContent">
-            <div class="loading-block"><div class="spinner"></div><span>Loading logs…</span></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── WARNINGS ────────────────────────────────────── -->
-      <div class="panel" id="panel-warnings">
-        <div class="panel-header">
-          <h1 class="panel-title">Warnings</h1>
-          <p class="panel-sub">View warning history for a specific member.</p>
-        </div>
-        <div class="card">
-          <div class="card-title">Lookup Member Warnings</div>
-          <div class="lookup-row">
-            <input type="text" class="form-input lookup-input" id="warnUserId" placeholder="Discord User ID">
-            <button class="btn btn-primary" onclick="loadWarnings()"><i class="fas fa-search"></i> Search</button>
-          </div>
-          <div id="warningsContent"></div>
-        </div>
-      </div>
-
-      <!-- ── TICKETS ─────────────────────────────────────── -->
-      <div class="panel" id="panel-tickets">
-        <div class="panel-header">
-          <h1 class="panel-title">Ticket System</h1>
-          <p class="panel-sub">Configure support and community access tickets.</p>
-        </div>
-        <div class="ticket-stats-grid" id="ticketStats">
-          <div class="ticket-stat-card">
-            <div class="ticket-stat-header">Support Tickets</div>
-            <div class="ticket-stat-row"><span class="ticket-stat-label">Total</span><span class="ticket-stat-value" id="tsTotalSupport">—</span></div>
-            <div class="ticket-stat-row"><span class="ticket-stat-label">Open</span><span class="ticket-stat-value" style="color:var(--accent)" id="tsOpenSupport">—</span></div>
-            <div class="ticket-stat-row"><span class="ticket-stat-label">Closed</span><span class="ticket-stat-value" style="color:var(--text3)" id="tsClosedSupport">—</span></div>
-          </div>
-          <div class="ticket-stat-card">
-            <div class="ticket-stat-header">Community Access Codes</div>
-            <div class="ticket-stat-row"><span class="ticket-stat-label">Total Generated</span><span class="ticket-stat-value" id="tsTotalCommunity">—</span></div>
-            <div class="ticket-stat-row"><span class="ticket-stat-label">Used</span><span class="ticket-stat-value" style="color:var(--accent)" id="tsUsedCommunity">—</span></div>
-            <div class="ticket-stat-row"><span class="ticket-stat-label">Unused</span><span class="ticket-stat-value" style="color:var(--text3)" id="tsUnusedCommunity">—</span></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">Support Ticket Settings</div>
-          <div class="card-sub">Run <code style="color:var(--accent);font-size:12px;">/ticket setup</code> in Discord after saving.</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Support Channel</label>
-              <select class="form-select" id="ticketChannel"></select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Support Staff Role</label>
-              <select class="form-select" id="ticketRole"></select>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="saveTicketSettings()"><i class="fas fa-save"></i> Save Settings</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">Community Access</div>
-          <div class="card-sub">Generate one-time access codes for <code style="color:var(--accent);font-size:12px;">/community setup</code> users via Discord slash commands.</div>
-          <div style="padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text2);line-height:1.6;">
-            Use <code style="color:var(--accent);">/community generate</code> in Discord to create a new access code.<br>
-            Use <code style="color:var(--accent);">/community admin-generate</code> to create an admin-level code.
-          </div>
-        </div>
-      </div>
-
-      <!-- ── ROLES ───────────────────────────────────────── -->
-      <div class="panel" id="panel-roles">
-        <div class="panel-header">
-          <h1 class="panel-title">Roles</h1>
-          <p class="panel-sub">View, create, and delete server roles.</p>
-        </div>
-        <div class="card">
-          <div class="card-title">Create New Role</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Role Name</label>
-              <input type="text" class="form-input" id="newRoleName" placeholder="e.g. Member">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Color</label>
-              <input type="color" class="form-input" id="newRoleColor" value="#99aab5" style="cursor:pointer;height:42px;padding:4px 8px;">
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="createRole()"><i class="fas fa-plus"></i> Create Role</button>
-          </div>
-        </div>
-        <div class="card" style="padding:0;overflow:hidden;">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;">Server Roles</div>
-          <div style="padding:16px;" id="rolesList">
-            <div class="loading-block"><div class="spinner"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── CHANNELS ────────────────────────────────────── -->
-      <div class="panel" id="panel-channels">
-        <div class="panel-header">
-          <h1 class="panel-title">Channels</h1>
-          <p class="panel-sub">View, create, and delete server channels.</p>
-        </div>
-        <div class="card">
-          <div class="card-title">Create New Channel</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Channel Name</label>
-              <input type="text" class="form-input" id="newChannelName" placeholder="e.g. announcements">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Type</label>
-              <select class="form-select" id="newChannelType">
-                <option value="text">📝 Text Channel</option>
-                <option value="voice">🔊 Voice Channel</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="createChannel()"><i class="fas fa-plus"></i> Create Channel</button>
-          </div>
-        </div>
-        <div class="card" style="padding:0;overflow:hidden;">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;">Server Channels</div>
-          <div style="padding:16px;" id="channelsList">
-            <div class="loading-block"><div class="spinner"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── SOCIAL LINKS ────────────────────────────────── -->
-      <div class="panel" id="panel-social">
-        <div class="panel-header">
-          <h1 class="panel-title">Social Links</h1>
-          <p class="panel-sub">Displayed via the <code style="color:var(--accent)">/social</code> command in Discord.</p>
-        </div>
-        <div class="card">
-          <div class="social-grid">
-            <div class="social-item"><div class="social-icon" style="background:#1877f2;color:#fff;"><i class="fab fa-facebook"></i></div><div><div class="social-label">Facebook</div><input type="url" class="social-input" id="social-facebook" placeholder="https://facebook.com/..."></div></div>
-            <div class="social-item"><div class="social-icon" style="background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7);color:#fff;"><i class="fab fa-instagram"></i></div><div><div class="social-label">Instagram</div><input type="url" class="social-input" id="social-instagram" placeholder="https://instagram.com/..."></div></div>
-            <div class="social-item"><div class="social-icon" style="background:#000;color:#fff;"><i class="fab fa-x-twitter"></i></div><div><div class="social-label">X / Twitter</div><input type="url" class="social-input" id="social-twitter" placeholder="https://x.com/..."></div></div>
-            <div class="social-item"><div class="social-icon" style="background:#ff0000;color:#fff;"><i class="fab fa-youtube"></i></div><div><div class="social-label">YouTube</div><input type="url" class="social-input" id="social-youtube" placeholder="https://youtube.com/..."></div></div>
-            <div class="social-item"><div class="social-icon" style="background:#0077b5;color:#fff;"><i class="fab fa-linkedin"></i></div><div><div class="social-label">LinkedIn</div><input type="url" class="social-input" id="social-linkedin" placeholder="https://linkedin.com/..."></div></div>
-            <div class="social-item"><div class="social-icon" style="background:#7289da;color:#fff;"><i class="fab fa-discord"></i></div><div><div class="social-label">Discord Invite</div><input type="url" class="social-input" id="social-discord" placeholder="https://discord.gg/..."></div></div>
-            <div class="social-item"><div class="social-icon" style="background:#25d366;color:#fff;"><i class="fab fa-whatsapp"></i></div><div><div class="social-label">WhatsApp</div><input type="url" class="social-input" id="social-whatsapp" placeholder="https://wa.me/..."></div></div>
-            <div class="social-item"><div class="social-icon" style="background:#24292e;color:#fff;"><i class="fab fa-github"></i></div><div><div class="social-label">GitHub</div><input type="url" class="social-input" id="social-github" placeholder="https://github.com/..."></div></div>
-          </div>
-          <div class="form-actions" style="margin-top:20px;">
-            <button class="btn btn-primary" onclick="saveSocial()"><i class="fas fa-save"></i> Save Social Links</button>
-          </div>
-        </div>
-      </div>
-
-    </main><!-- end .main -->
-  </div><!-- end .layout -->
-</div><!-- end #dashScreen -->
-
-<!-- CONFIRM DIALOG -->
-<div class="dialog-overlay" id="confirmDialog">
-  <div class="dialog">
-    <div class="dialog-icon danger"><i class="fas fa-triangle-exclamation"></i></div>
-    <h3 class="dialog-title" id="dialogTitle">Confirm Action</h3>
-    <p class="dialog-text" id="dialogText">Are you sure?</p>
-    <p class="dialog-text" style="font-size:12px;color:var(--text3);">Type the action name to confirm:</p>
-    <input type="text" class="dialog-input" id="dialogConfirmInput" placeholder="e.g. ban">
-    <div class="dialog-actions">
-      <button class="btn btn-secondary" onclick="closeDialog()">Cancel</button>
-      <button class="btn btn-danger" id="dialogConfirmBtn">Confirm</button>
-    </div>
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main" id="content"></main>
   </div>
 </div>
 
-<!-- TOAST -->
+<div id="modal" role="presentation"></div>
 <div class="toast" id="toast"></div>
 
 <script>
-(function () {
-  // ════════════════════════════════════════════════════════════
-  // ⚙️  CONFIG — update API_URL to your deployed server URL
-  // ════════════════════════════════════════════════════════════
-  const CLIENT_ID = '1488586644821905458';
-  const API_URL   = window.location.origin; // same server serves HTML + API
-  const OAUTH_SCOPES = 'identify guilds';
-  // ════════════════════════════════════════════════════════════
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const KEY = 'phinex_token';
+const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: k => { try { localStorage.removeItem(k); } catch {} } };
 
-  // ─── STATE ────────────────────────────────────────────────
-  let token        = null;
-  let user         = null;
-  let guilds       = [];
-  let selectedGuild = null;
-  let guildData    = null;  // { guild, settings, roles, channels }
-  let dialogAction = null;
+let token = null, me = null, guilds = [], gid = null, G = null, current = 'overview', pendingAdded = null, loginMsg = '';
+let popup = null, watch = null, poll = null, renderSeq = 0;
 
-  // ─── DOM ──────────────────────────────────────────────────
-  const $ = id => document.getElementById(id);
-  const loginScreen  = $('loginScreen');
-  const serverScreen = $('serverScreen');
-  const dashScreen   = $('dashScreen');
+/* ───────────────────────── helpers ───────────────────────── */
+function toast(msg, type = 'info') {
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast show ' + type;
+  clearTimeout(t._t); t._t = setTimeout(() => t.className = 'toast', 4200);
+}
+function busy(btn, on) { if (!btn) return; btn.disabled = on; btn.classList.toggle('busy', on); }
+const timeAgo = ts => { const s = Math.max(1, Math.round((Date.now() - new Date(ts)) / 1000)); const u = [[86400, 'd'], [3600, 'h'], [60, 'm']]; for (const [n, l] of u) if (s >= n) return Math.floor(s / n) + l + ' ago'; return s + 's ago'; };
+const dt = ts => new Date(ts).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+const initials = n => esc(String(n || '?').replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2).toUpperCase() || '?');
+const avatar = (url, name, cls = '') => url ? `<img class="av ${cls}" src="${esc(url)}" alt="" loading="lazy">` : `<span class="av ${cls}">${initials(name)}</span>`;
+const guildIcon = (g, cls = 'sq lg') => g.icon ? avatar(`https://cdn.discordapp.com/icons/${g.id}/${g.icon}.${g.icon.startsWith('a_') ? 'gif' : 'png'}?size=128`, g.name, cls) : `<span class="av ${cls}">${initials(g.name)}</span>`;
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
-  // ─── TOAST ────────────────────────────────────────────────
-  function toast(msg, type = 'info') {
-    const el = $('toast');
-    el.textContent = msg;
-    el.className   = `toast show ${type}`;
-    clearTimeout(el._t);
-    el._t = setTimeout(() => el.className = 'toast', 3500);
+async function api(method, path, body) {
+  let res;
+  try {
+    res = await fetch(path, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
+  } catch { throw new Error('Cannot reach the server. If it was asleep, wait ~30 seconds and try again.'); }
+  let data = {}; try { data = await res.json(); } catch {}
+  if (res.status === 401 && data.code === 'session_expired') { expireSession(data.error); throw new Error(data.error || 'Session expired'); }
+  if (!res.ok) { const e = new Error(data.error || `Request failed (${res.status})`); e.code = data.code; e.status = res.status; throw e; }
+  return data;
+}
+
+/* ───────────────────────── modal system ───────────────────────── */
+function modal(html, { dismiss = true } = {}) {
+  const m = $('#modal');
+  m.innerHTML = `<div class="modal-bg" ${dismiss ? 'data-act="close-modal"' : ''}></div><div class="modal-card" role="dialog" aria-modal="true">${html}</div>`;
+  m.classList.add('open');
+}
+function closeModal() { stopWatch(); $('#modal').classList.remove('open'); $('#modal').innerHTML = ''; }
+function stopWatch() { clearInterval(watch); clearInterval(poll); watch = poll = null; }
+let confirmResolve = null;
+function confirmBox({ title, text, confirm = 'Confirm', danger = true, fields = '', read = null }) {
+  return new Promise(resolve => {
+    confirmResolve = ok => { confirmResolve = null; const v = ok ? (read ? read() : true) : null; closeModal(); resolve(v); };
+    modal(`<div class="m-ico ${danger ? 'red' : ''}"><i class="fas fa-${danger ? 'triangle-exclamation' : 'circle-question'}"></i></div><h2>${esc(title)}</h2><p>${text}</p>${fields}
+      <div class="mbtns"><button class="btn ghost" data-act="confirm-no">Cancel</button><button class="btn ${danger ? 'danger' : 'primary'}" data-act="confirm-yes">${esc(confirm)}</button></div>`, { dismiss: false });
+  });
+}
+
+/* ───────────────────────── auth: login modal + popup ───────────────────────── */
+function setScreen(name) { $$('.screen').forEach(s => s.classList.toggle('on', s.id === 's-' + name)); window.scrollTo(0, 0); }
+function openPopup(url, name) {
+  const w = 500, h = 740, l = Math.max(0, (screen.width - w) / 2), t = Math.max(0, (screen.height - h) / 2);
+  return window.open(url, name, `width=${w},height=${h},left=${l},top=${t},popup=yes`);
+}
+
+function showLogin(state = 'idle', msg = '') {
+  setScreen('login');
+  if (state === 'waiting') {
+    modal(`<div class="spinner"></div><h2>Waiting for Discord…</h2><p>A Discord window opened. Log in and click <b>Authorize</b> there. This window continues automatically.</p>
+      <div class="mbtns"><button class="btn ghost" data-act="login">Reopen window</button><button class="btn ghost" data-act="cancel-login">Cancel</button></div>`, { dismiss: false });
+  } else {
+    modal(`<div class="m-ico blue"><i class="fab fa-discord"></i></div><h2>Login with Discord</h2>
+      <p>${msg ? `<span style="color:#ff8585">${esc(msg)}</span><br><br>` : ''}Sign in to choose a server to manage. We only read your username and the list of servers you manage.</p>
+      <button class="btn discord" data-act="login"><i class="fab fa-discord"></i> Continue with Discord</button><div class="sm-txt">A small Discord window will open. It closes itself when you're done.</div>`, { dismiss: false });
   }
+}
+function startLogin() {
+  popup = openPopup('/auth/login', 'phinex_login');
+  if (!popup) { location.href = '/auth/login'; return; }   // popup blocked: full-page flow, returns to /dashboard#token=…
+  showLogin('waiting');
+  clearInterval(watch);
+  watch = setInterval(() => { if (popup && popup.closed) { clearInterval(watch); if (!token) showLogin('idle', 'The login window was closed before finishing.'); } }, 700);
+}
+function expireSession(msg) { store.del(KEY); token = null; me = null; closeModal(); showLogin('idle', msg || 'Your session expired. Please log in again.'); }
+function logout() { store.del(KEY); token = null; me = null; guilds = []; G = null; closeModal(); showLogin('idle'); }
 
-  // ─── SCREENS ──────────────────────────────────────────────
-  function showScreen(name) {
-    loginScreen.className  = name === 'login'  ? 'active' : '';
-    serverScreen.className = name === 'server' ? 'active' : '';
-    dashScreen.className   = name === 'dash'   ? 'active' : '';
-  }
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin || !e.data || typeof e.data !== 'object') return;
+  const d = e.data;
+  if (d.type === 'phinex-auth' && d.token) { stopWatch(); token = d.token; store.set(KEY, token); closeModal(); bootstrap(); }
+  else if (d.type === 'phinex-auth-error') { stopWatch(); showLogin('idle', d.error); }
+  else if (d.type === 'phinex-bot-added') { if (inviteCtx) { inviteCtx.authorized = true; renderInvite(); } }
+  else if (d.type === 'phinex-bot-error') { if (inviteCtx) { stopWatch(); renderInvite('cancelled'); } }
+});
 
-  // ─── OAUTH FLOW ───────────────────────────────────────────
-  const REDIRECT = encodeURIComponent(window.location.origin + '/dashboard.html');
-  const OAUTH_URL = `https://discord.com/oauth2/authorize?client_id=1488586644821905458&permissions=8&integration_type=0&scope=bot`;
+function userChips() {
+  $$('[data-user]').forEach(el => { el.innerHTML = me ? `${avatar(me.avatar ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=64` : '', me.username)}<span>${esc(me.name || me.username)}</span>` : ''; });
+}
 
-  $('discordLoginBtn').href = OAUTH_URL;
+/* ───────────────────────── server picker + add-bot flow ───────────────────────── */
+function renderServers() {
+  const q = ($('#serverSearch').value || '').toLowerCase();
+  const list = guilds.filter(g => g.name.toLowerCase().includes(q));
+  $('#serverGrid').innerHTML = list.length ? list.map(g => `
+    <button class="sv ${g.hasBot ? 'has' : ''}" data-act="pick-server" data-id="${esc(g.id)}">
+      ${guildIcon(g)}<div class="sv-name">${esc(g.name)}</div>
+      ${g.hasBot ? '<span class="badge b-green">● Bot active</span>' : '<span class="badge">Bot not added</span>'}
+      <div class="sv-act">${g.hasBot ? '<i class="fas fa-sliders"></i> Manage server' : '<i class="fab fa-discord"></i> Add PhineX'}</div>
+    </button>`).join('')
+    : `<div class="empty" style="grid-column:1/-1"><i class="fas fa-server"></i>${guilds.length ? 'No servers match your search.' : 'No servers found where you have the Manage Server permission.'}</div>`;
+}
+function showServers() { stopWatch(); closeModal(); gid = null; G = null; setScreen('servers'); userChips(); renderServers(); }
 
-  function parseHash() {
-    const hash   = window.location.hash.slice(1);
-    const params = new URLSearchParams(hash);
-    return params.get('access_token');
-  }
-
-  function saveToken(t) {
-    try { sessionStorage.setItem('phinex_dash_token', t); } catch(e) {}
-    token = t;
-  }
-
-  function loadToken() {
-    // 1. Check URL hash (just redirected from Discord)
-    const fromHash = parseHash();
-    if (fromHash) {
-      saveToken(fromHash);
-      history.replaceState(null, '', window.location.pathname); // clean hash
-      return fromHash;
-    }
-    // 2. Check sessionStorage
-    try { return sessionStorage.getItem('phinex_dash_token'); } catch(e) { return null; }
-  }
-
-  function logout() {
-    try { sessionStorage.removeItem('phinex_dash_token'); } catch(e) {}
-    token = null; user = null; selectedGuild = null; guildData = null;
-    showScreen('login');
-  }
-
-  $('logoutBtn').onclick    = logout;
-  $('dashLogoutBtn').onclick = logout;
-
-  // ─── API ──────────────────────────────────────────────────
-  async function api(method, path, body) {
-    const opts = {
-      method,
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-    };
-    if (body) opts.body = JSON.stringify(body);
-    const res  = await fetch(API_URL + path, opts);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
-  }
-
-  // ─── INIT ─────────────────────────────────────────────────
-  async function init() {
-    token = loadToken();
-    if (!token) { showScreen('login'); return; }
-
+let inviteCtx = null;
+function startInvite(g) {
+  inviteCtx = { g, authorized: false, startedAt: Date.now(), timedOut: false };
+  popup = openPopup('/invite?guild=' + encodeURIComponent(g.id), 'phinex_invite');
+  if (!popup) { location.href = '/invite?guild=' + encodeURIComponent(g.id); return; }
+  renderInvite();
+  clearInterval(poll);
+  poll = setInterval(async () => {
     try {
-      user  = await api('GET', '/api/user');
-      setUserUI();
-      guilds = await api('GET', '/api/guilds');
-      renderServerGrid();
-      showScreen('server');
-    } catch(e) {
-      // Token invalid / expired
-      logout();
-    }
+      const s = await api('GET', `/api/guild/${g.id}/status`);
+      if (s.hasBot) { stopWatch(); return botJoined(g.id); }
+    } catch {}
+    const closed = popup && popup.closed;
+    if (Date.now() - inviteCtx.startedAt > 120000 || (closed && Date.now() - (inviteCtx.closedAt ||= Date.now()) > 15000)) { stopWatch(); renderInvite('timeout'); }
+  }, 1500);
+}
+function renderInvite(state) {
+  const { g, authorized } = inviteCtx;
+  if (state === 'cancelled' || state === 'timeout') {
+    modal(`<div class="m-ico red"><i class="fas fa-circle-xmark"></i></div><h2>${state === 'cancelled' ? 'Invite cancelled' : "PhineX hasn't joined yet"}</h2>
+      <p>${state === 'cancelled' ? 'You closed the Discord authorization. Nothing was changed.' : 'The authorization didn\'t finish. You can try again — make sure you click <b>Authorize</b> on Discord.'}</p>
+      <div class="mbtns"><button class="btn ghost" data-act="close-invite">Back</button><button class="btn primary" data-act="retry-invite">Try again</button></div>`, { dismiss: false });
+    return;
   }
+  const step = (n, label) => `<li class="${authorized ? (n < 3 ? 'done' : 'now') : (n === 1 ? 'now' : '')} ${authorized && n === 3 ? 'now' : ''}"><i class="fas fa-${(authorized && n < 3) ? 'circle-check' : (n === (authorized ? 3 : 1) ? 'circle-notch fa-spin' : 'circle')}"></i>${label}</li>`;
+  modal(`${guildIcon(g, 'sq xl').replace('class="av', 'style="margin:0 auto" class="av')}<h2>Add PhineX to ${esc(g.name)}</h2>
+    <p>Authorize the bot in the Discord window that just opened. Then you'll land straight in this server's dashboard.</p>
+    <ul class="steps">${step(1, 'Authorize PhineX on Discord')}${step(2, 'Bot joins your server')}${step(3, 'Opening dashboard')}</ul>
+    <div class="mbtns"><button class="btn ghost" data-act="retry-invite">Reopen window</button><button class="btn ghost" data-act="close-invite">Cancel</button></div>`, { dismiss: false });
+}
+async function botJoined(id) {
+  try { guilds = await api('GET', '/api/guilds?refresh=1'); } catch {}
+  inviteCtx = null;
+  closeModal(); toast('PhineX joined the server!', 'success');
+  openGuild(id);
+}
+async function waitForBot(id) {       // used after a full-page invite redirect (#added=ID)
+  const g = guilds.find(x => x.id === id);
+  if (!g) { showServers(); toast('That server is not in your manageable list.', 'error'); return; }
+  if (g.hasBot) return openGuild(id);
+  setScreen('servers'); userChips(); renderServers();
+  inviteCtx = { g, authorized: true, startedAt: Date.now() };
+  renderInvite();
+  clearInterval(poll);
+  poll = setInterval(async () => {
+    try { const s = await api('GET', `/api/guild/${id}/status`); if (s.hasBot) { stopWatch(); return botJoined(id); } } catch {}
+    if (Date.now() - inviteCtx.startedAt > 60000) { stopWatch(); renderInvite('timeout'); }
+  }, 1500);
+}
 
-  function setUserUI() {
-    if (!user) return;
-    const avatarUrl = user.avatar
-      ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
-      : null;
-    const initials = (user.username || '??').slice(0,2).toUpperCase();
-
-    ['headerAvatar','dashAvatar'].forEach(id => {
-      const el = $(id);
-      if (!el) return;
-      if (avatarUrl) el.innerHTML = `<img src="${avatarUrl}" alt="">`;
-      else el.textContent = initials;
-    });
-    ['headerUsername','dashUsername'].forEach(id => {
-      const el = $(id);
-      if (el) el.textContent = user.username;
-    });
+/* ───────────────────────── bootstrap ───────────────────────── */
+function readHash() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (p.get('token')) { token = p.get('token'); store.set(KEY, token); }
+  if (p.get('added')) pendingAdded = p.get('added');
+  if (p.get('error')) loginMsg = p.get('error');
+  if (location.hash) history.replaceState(null, '', location.pathname);
+}
+async function bootstrap() {
+  setScreen('servers'); $('#serverGrid').innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spinner"></div>Loading your servers…</div>';
+  try {
+    me = await api('GET', '/api/me'); userChips();
+    guilds = await api('GET', '/api/guilds');
+  } catch (e) { if (!token) return; setScreen('servers'); $('#serverGrid').innerHTML = `<div class="empty" style="grid-column:1/-1"><i class="fas fa-plug-circle-xmark"></i>${esc(e.message)}<br><br><button class="btn primary" data-act="retry-boot">Retry</button></div>`; return; }
+  if (pendingAdded) { const id = pendingAdded; pendingAdded = null; return waitForBot(id); }
+  showServers();
+}
+async function openGuild(id) {
+  const g = guilds.find(x => x.id === id);
+  if (g && !g.hasBot) return startInvite(g);
+  setScreen('dash'); userChips(); $('#content').innerHTML = '<div class="loading"><div class="spinner"></div>Loading server…</div>'; $('#sidebar').innerHTML = '';
+  try {
+    G = await api('GET', `/api/guild/${id}`); gid = id;
+  } catch (e) {
+    if (e.code === 'no_bot' && g) { g.hasBot = false; return startInvite(g); }
+    toast(e.message, 'error'); return showServers();
   }
+  $('#srvChip').innerHTML = `${guildIcon(G.guild, 'sq')}<span>${esc(G.guild.name)}</span><i class="fas fa-chevron-down" style="font-size:10px;color:var(--text3)"></i>`;
+  buildNav(); switchPanel(panels[current] ? current : 'overview');
+}
 
-  // ─── SERVER GRID ──────────────────────────────────────────
-  function renderServerGrid() {
-    const grid = $('serverGrid');
-    if (!guilds || !guilds.length) {
-      grid.innerHTML = '<div class="empty"><div class="empty-icon">🏠</div><p class="empty-text">No servers found where you have Manage Server permission.</p></div>';
+/* ───────────────────────── nav + panel router ───────────────────────── */
+const NAV = [
+  ['Overview', [['overview', 'gauge-high', 'Overview']]],
+  ['General', [['welcome', 'hand-peace', 'Welcome & Leave'], ['logging', 'scroll', 'Logging'], ['commands', 'terminal', 'Custom Commands']]],
+  ['Moderation', [['members', 'user-shield', 'Members'], ['automod', 'robot', 'Auto-Moderation'], ['logs', 'list-check', 'Mod Logs']]],
+  ['Engagement', [['leveling', 'ranking-star', 'Leveling'], ['giveaways', 'gift', 'Giveaways'], ['starboard', 'star', 'Starboard & Suggestions'], ['announce', 'bullhorn', 'Announcements']]],
+  ['Server', [['tickets', 'ticket', 'Tickets'], ['roles', 'tags', 'Roles'], ['channels', 'hashtag', 'Channels'], ['social', 'share-nodes', 'Social Links']]]
+];
+function buildNav() {
+  $('#sidebar').innerHTML = NAV.map(([l, items]) => `<div class="nav-l">${l}</div>${items.map(([id, ic, t]) => `<button class="nav" data-act="nav" data-id="${id}"><i class="fas fa-${ic}"></i>${t}</button>`).join('')}`).join('');
+}
+async function switchPanel(name) {
+  current = name; $('#sidebar').classList.remove('open');
+  $$('.nav').forEach(n => n.classList.toggle('on', n.dataset.id === name));
+  const p = panels[name], seq = ++renderSeq, el = $('#content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const html = await p.render();
+    if (seq !== renderSeq) return;
+    el.innerHTML = `<div class="panel-in"><div class="ph"><h1>${p.title}</h1><p>${p.sub}</p></div>${html}</div>`;
+    if (p.bind) p.bind();
+  } catch (e) { if (seq === renderSeq) el.innerHTML = `<div class="empty"><i class="fas fa-triangle-exclamation"></i>${esc(e.message)}<br><br><button class="btn ghost" data-act="nav" data-id="${name}">Try again</button></div>`; }
+}
+
+/* ───────────────────────── form builders ───────────────────────── */
+const chans = () => G.channels.filter(c => c.type === 'text' || c.type === 'announcement').map(c => ({ id: c.id, label: '#' + c.name }));
+const roleList = () => G.roles.filter(r => !r.managed).map(r => ({ id: r.id, label: r.name }));
+const options = (items, sel, empty) => (empty === false ? '' : `<option value="">${esc(empty || '— None —')}</option>`) + items.map(i => `<option value="${esc(i.id)}" ${String(i.id) === String(sel) ? 'selected' : ''}>${esc(i.label)}</option>`).join('');
+const chSel = (id, v, empty) => `<select class="input" id="${id}">${options(chans(), v, empty)}</select>`;
+const roleSel = (id, v, empty) => `<select class="input" id="${id}">${options(roleList(), v, empty)}</select>`;
+const field = (label, inner, hint) => `<div class="field"><label>${label}</label>${inner}${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
+const toggle = (id, on, title, desc) => `<label class="toggle-row"><div><div class="t-title">${title}</div>${desc ? `<div class="t-desc">${desc}</div>` : ''}</div><span class="switch"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}><i></i></span></label>`;
+const checkList = (id, items, sel, label) => `<details class="checklist" id="${id}"><summary>${label}: <b>${sel.length}</b> selected</summary><div class="cl-body">${items.map(i => `<label><input type="checkbox" value="${esc(i.id)}" ${sel.includes(i.id) ? 'checked' : ''}> ${esc(i.label)}</label>`).join('') || '<span class="hint">Nothing to pick.</span>'}</div></details>`;
+const checked = id => $$(`#${id} input:checked`).map(i => i.value);
+const val = id => { const e = $('#' + id); return e ? e.value : ''; };
+const on = id => { const e = $('#' + id); return !!(e && e.checked); };
+const card = (title, sub, body) => `<div class="card">${title ? `<h3>${title}</h3>` : ''}${sub ? `<div class="sub">${sub}</div>` : ''}${body}</div>`;
+const empty = (icon, text) => `<div class="empty"><i class="fas fa-${icon}"></i>${text}</div>`;
+
+async function saveSettings(payload, btn, msg = 'Saved!') {
+  busy(btn, true);
+  try { const r = await api('POST', `/api/guild/${gid}/settings`, payload); G.settings = r.settings; toast(msg, 'success'); return true; }
+  catch (e) { toast(e.message, 'error'); return false; } finally { busy(btn, false); }
+}
+
+/* ───────────────────────── panels ───────────────────────── */
+const panels = {};
+
+panels.overview = {
+  title: esc('Overview'), sub: 'Your server at a glance.',
+  async render() {
+    const g = G.guild, tc = G.channels.filter(c => c.type === 'text' || c.type === 'announcement').length;
+    let logs = [], users = {};
+    try { ({ logs, users } = await api('GET', `/api/guild/${gid}/logs?limit=5`)); } catch {}
+    const health = G.botMissing.length
+      ? `<div class="note warn"><i class="fas fa-triangle-exclamation"></i><div><b>PhineX is missing permissions:</b> ${G.botMissing.map(esc).join(', ')}.<br>Some features won't work until this is fixed. <button class="btn warn sm" style="margin-top:8px" data-act="fix-perms"><i class="fab fa-discord"></i> Re-authorize to fix</button></div></div>`
+      : `<div class="note ok"><i class="fas fa-circle-check"></i><div>PhineX has every permission it needs. For role features, also keep the <b>PhineX</b> role <b>above</b> the roles it should manage (Server Settings → Roles).</div></div>`;
+    return `${health}
+    <div class="stats">
+      <div class="stat"><small>Members</small><b>${g.memberCount.toLocaleString()}</b></div>
+      <div class="stat"><small>Text channels</small><b>${tc}</b></div>
+      <div class="stat"><small>Roles</small><b>${G.roles.length}</b></div>
+      <div class="stat"><small>Boosts</small><b>${g.boosts}</b></div>
+      <div class="stat"><small>Bot latency</small><b style="color:var(--accent)">${G.bot.ping}ms</b></div>
+    </div>
+    ${card('Quick actions', 'Jump straight to the things admins do most.', `<div class="chips">
+      ${[['members', 'user-shield', 'Moderate a member'], ['announce', 'bullhorn', 'Send announcement'], ['giveaways', 'gift', 'Start giveaway'], ['tickets', 'ticket', 'Set up tickets'], ['automod', 'robot', 'Auto-moderation'], ['leveling', 'ranking-star', 'Leveling']]
+        .map(([id, ic, t]) => `<button class="btn ghost sm" data-act="nav" data-id="${id}"><i class="fas fa-${ic}"></i>${t}</button>`).join('')}</div>`)}
+    ${card('Recent moderation', '', logs.length ? `<div class="tw"><table><tbody>${logs.map(l => `<tr><td><span class="badge ${typeBadge(l.type)}">${esc(l.type)}</span></td><td class="td-m">${esc((users[l.user_id] || {}).username || l.user_id)}</td><td>${esc(l.reason || '—')}</td><td>${timeAgo(l.created_at)}</td></tr>`).join('')}</tbody></table></div>` : empty('shield-halved', 'No moderation actions yet.'))}`;
+  }
+};
+
+panels.welcome = {
+  title: 'Welcome & Leave', sub: 'Greet new members, give them a role, and say goodbye.',
+  render() {
+    const s = G.settings;
+    return `${card('Welcome message', 'Variables: <code>{user}</code> mention · <code>{username}</code> · <code>{server}</code> · <code>{count}</code> member number.', `
+      <div class="g2">${field('Welcome channel', chSel('wCh', s.welcome_channel))}${field('Auto-role for new members', roleSel('wRole', s.welcome_role, '— No role —'), 'Keep PhineX\'s role above this role.')}</div>
+      ${field('Message', `<textarea class="input" id="wMsg" maxlength="1000" placeholder="Welcome {user} to {server}! You are member #{count} 🎉">${esc(s.welcome_message || '')}</textarea>`)}
+      <div class="lbl" style="margin-bottom:6px">Preview</div><div class="embed" style="border-left:0"><div class="embed-b" style="padding:12px 14px;background:var(--bg3);border-radius:8px;width:100%;max-width:none"><div class="embed-d" id="wPrev"></div></div></div>
+      <div class="actions"><button class="btn primary" data-act="save-welcome"><i class="fas fa-floppy-disk"></i> Save welcome</button></div>`)}
+    ${card('Leave message', 'Sent when someone leaves or is removed. Uses the same variables.', `
+      <div class="g2">${field('Leave channel', chSel('lCh', s.leave_channel))}</div>
+      ${field('Message', `<textarea class="input" id="lMsg" maxlength="1000" placeholder="{username} has left {server}. 👋">${esc(s.leave_message || '')}</textarea>`)}
+      <div class="actions"><button class="btn primary" data-act="save-leave"><i class="fas fa-floppy-disk"></i> Save leave message</button></div>`)}`;
+  },
+  bind() {
+    const p = () => { $('#wPrev').textContent = (val('wMsg') || 'Welcome {user}!').replace(/\{user\}/g, '@NewMember').replace(/\{username\}/g, 'NewMember').replace(/\{server\}/g, G.guild.name).replace(/\{count\}/g, G.guild.memberCount + 1); };
+    $('#wMsg').addEventListener('input', p); p();
+  }
+};
+
+panels.logging = {
+  title: 'Logging', sub: 'Keep an audit trail in a private channel.',
+  render() {
+    const s = G.settings, l = s.logging;
+    return card('Log channel', 'Pick a private staff channel. PhineX needs View + Send + Embed permissions there.', `
+      ${field('Channel', chSel('logCh', s.log_channel, '— Logging off —'))}
+      <div class="lbl">Events to log</div>
+      ${toggle('lgJoin', l.joins, 'Member joins', 'Includes account age, useful against raids.')}
+      ${toggle('lgLeave', l.leaves, 'Member leaves')}
+      ${toggle('lgDel', l.messageDeletes, 'Deleted messages')}
+      ${toggle('lgEdit', l.messageEdits, 'Edited messages', 'Can be noisy on busy servers.')}
+      ${toggle('lgMod', l.moderation, 'Moderation actions', 'Bans, kicks, timeouts, warnings, AutoMod — from commands and this dashboard.')}
+      <div class="actions"><button class="btn primary" data-act="save-logging"><i class="fas fa-floppy-disk"></i> Save logging</button></div>`);
+  }
+};
+
+panels.commands = {
+  title: 'Custom Commands', sub: 'Create your own <code>!commands</code> with a fixed reply.',
+  async render() {
+    const { commands } = await api('GET', `/api/guild/${gid}/commands`);
+    return `${card('New command', 'Replies support <code>{user}</code> and <code>{server}</code>. Example: <code>!rules</code> → your rules text.', `
+      <div class="g2">${field('Name (no !)', '<input class="input" id="ccName" maxlength="30" placeholder="rules">')}</div>
+      ${field('Reply', '<textarea class="input" id="ccResp" maxlength="1500" placeholder="Be kind, {user}! Read #rules."></textarea>')}
+      <div class="actions"><button class="btn primary" data-act="cc-add"><i class="fas fa-plus"></i> Save command</button></div>`)}
+    ${card(`Commands (${commands.length})`, '', commands.length ? commands.map(c => `<div class="row"><code>!${esc(c.name)}</code><span class="nm">${esc(c.response.slice(0, 120))}</span><button class="btn danger sm" data-act="cc-del" data-id="${esc(c.name)}"><i class="fas fa-trash"></i></button></div>`).join('') : empty('terminal', 'No custom commands yet.'))}`;
+  }
+};
+
+/* ── members & moderation ── */
+let memberView = null;
+panels.members = {
+  title: 'Members', sub: 'Search a member or paste a user ID to warn, timeout, kick or ban.',
+  render() {
+    return `<div class="tabs"><button class="tab on" data-act="mtab" data-id="find">Find member</button><button class="tab" data-act="mtab" data-id="bans">Bans</button></div>
+      <div id="m-find">${card('', '', `<div style="display:flex;gap:10px"><input class="input" id="memberQ" placeholder="Search by username or paste a user ID…" autocomplete="off"><button class="btn primary" data-act="member-search"><i class="fas fa-magnifying-glass"></i></button></div><div class="mres" id="memberRes"></div>`)}<div id="memberDetail"></div></div>
+      <div id="m-bans" hidden>${card('Banned users', 'Up to 100 shown.', '<div id="banList"></div>')}</div>`;
+  },
+  bind() { memberView = null; $('#memberQ').addEventListener('input', debounce(memberSearch, 350)); $('#memberQ').addEventListener('keydown', e => { if (e.key === 'Enter') memberSearch(); }); memberSearch(); }
+};
+async function memberSearch() {
+  const box = $('#memberRes'); if (!box) return;
+  const q = val('memberQ').trim();
+  try {
+    const { members } = await api('GET', `/api/guild/${gid}/members?q=${encodeURIComponent(q)}`);
+    if (!members.length) {
+      box.innerHTML = /^\d{15,25}$/.test(q) ? `<div class="row" data-act="member-open" data-id="${esc(q)}" style="cursor:pointer"><span class="av"><i class="fas fa-user"></i></span><span class="nm">Look up user ID ${esc(q)} (not in server)</span><i class="fas fa-chevron-right"></i></div>` : empty('user-slash', 'No members found.');
       return;
     }
-
-    grid.innerHTML = guilds.map(g => {
-      const iconUrl = g.icon
-        ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64`
-        : null;
-      const iconHTML = iconUrl
-        ? `<img src="${iconUrl}" alt="${esc(g.name)}">`
-        : `<span>${esc(g.name.slice(0,2))}</span>`;
-      const statusBadge = g.hasBot
-        ? `<span class="badge badge-green"><span class="dot"></span>Bot Active</span>`
-        : `<span class="badge badge-gray">No Bot</span>`;
-      const addBtn = !g.hasBot
-        ? `<a href="${g.inviteUrl}" target="_blank" class="server-add-btn"><i class="fab fa-discord"></i> Add PhineX</a>`
-        : '';
-
-      return `<div class="server-card ${g.hasBot ? 'has-bot' : ''}" onclick="selectGuild('${g.id}')">
-        <div class="server-icon">${iconHTML}</div>
-        <div class="server-name">${esc(g.name)}</div>
-        <div class="server-status">${statusBadge}</div>
-        ${addBtn}
-      </div>`;
-    }).join('');
+    box.innerHTML = members.map(m => `<div class="row" data-act="member-open" data-id="${esc(m.id)}">${avatar(m.avatar, m.username, 'lg')}<span class="nm">${esc(m.displayName)} <small>@${esc(m.username)}</small></span>${m.bot ? '<span class="badge b-blue">Bot</span>' : ''}${m.owner ? '<span class="badge b-gold">Owner</span>' : ''}<i class="fas fa-chevron-right" style="color:var(--text3)"></i></div>`).join('');
+  } catch (e) { box.innerHTML = empty('triangle-exclamation', esc(e.message)); }
+}
+async function memberOpen(id) {
+  const box = $('#memberDetail'); box.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const d = await api('GET', `/api/guild/${gid}/member/${id}`); memberView = d;
+    const m = d.member, u = d.user, timed = m && m.timedOutUntil && m.timedOutUntil > Date.now();
+    box.innerHTML = card('', '', `
+      <div class="mhead">${avatar(u.avatar, u.username, 'xl')}<div style="flex:1;min-width:0"><h3>${esc(m ? m.displayName : u.username)} <small style="font:400 14px 'DM Sans';color:var(--text3)">@${esc(u.username)}</small></h3>
+        <div class="hint">ID ${esc(u.id)} · Account created ${dt(u.createdAt)}${m ? ` · Joined ${dt(m.joinedAt)}` : ''}</div>
+        <div class="chips" style="margin-top:8px">${u.bot ? '<span class="badge b-blue">Bot</span>' : ''}${m && m.owner ? '<span class="badge b-gold">Owner</span>' : ''}${!m ? '<span class="badge">Not in server</span>' : ''}${d.banned ? '<span class="badge b-red">Banned</span>' : ''}${timed ? `<span class="badge b-gold">Timed out until ${dt(m.timedOutUntil)}</span>` : ''}${m ? m.roles.map(r => `<span class="rchip"><span class="dot" style="background:${esc(r.color === '#000000' ? '#666' : r.color)};width:9px;height:9px;border-radius:50%"></span>${esc(r.name)}</span>`).join('') : ''}</div></div></div>
+      <div class="g2">${field('Reason', '<input class="input" id="mReason" maxlength="400" placeholder="Shown in logs and the audit log">')}
+        ${field('Timeout length', `<select class="input" id="mMin"><option value="5">5 minutes</option><option value="10" selected>10 minutes</option><option value="60">1 hour</option><option value="1440">1 day</option><option value="10080">7 days</option><option value="40320">28 days (max)</option></select>`)}</div>
+      <div class="chips">
+        ${m ? `<button class="btn warn" data-act="mod" data-id="warn"><i class="fas fa-triangle-exclamation"></i> Warn</button>
+        <button class="btn warn" data-act="mod" data-id="timeout" ${m.moderatable ? '' : 'disabled title="I cannot timeout this member"'}><i class="fas fa-clock"></i> Timeout</button>
+        ${timed ? '<button class="btn ghost" data-act="mod" data-id="untimeout"><i class="fas fa-clock-rotate-left"></i> Remove timeout</button>' : ''}
+        <button class="btn danger" data-act="mod" data-id="kick" ${m.kickable ? '' : 'disabled title="I cannot kick this member"'}><i class="fas fa-door-open"></i> Kick</button>` : ''}
+        ${d.banned ? '<button class="btn primary" data-act="mod" data-id="unban"><i class="fas fa-unlock"></i> Unban</button>' : `<button class="btn danger" data-act="mod" data-id="ban" ${m && !m.bannable ? 'disabled title="I cannot ban this member"' : ''}><i class="fas fa-ban"></i> Ban</button>`}
+      </div>`) + card(`Warnings (${d.warnings.length})`, '', d.warnings.length
+        ? d.warnings.map(w => `<div class="row"><span class="badge b-gold">#${w.id}</span><span class="nm">${esc(w.reason || 'No reason')} <small>· ${timeAgo(w.created_at)}</small></span><button class="btn ghost sm" data-act="warn-del" data-id="${w.id}"><i class="fas fa-xmark"></i></button></div>`).join('') + `<div class="actions"><button class="btn danger sm" data-act="warn-clear">Clear all warnings</button></div>`
+        : empty('face-smile', 'No warnings — clean record.'));
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) { box.innerHTML = card('', '', empty('triangle-exclamation', esc(e.message))); }
+}
+async function modAct(action, btn) {
+  const u = memberView.user; const reason = val('mReason').trim();
+  let extra = {};
+  if (action === 'kick' || action === 'ban') {
+    const r = await confirmBox({ title: `${action === 'ban' ? 'Ban' : 'Kick'} ${u.username}?`, text: action === 'ban' ? 'They will be removed and unable to rejoin until unbanned.' : 'They will be removed but can rejoin with an invite.', confirm: action === 'ban' ? 'Ban member' : 'Kick member',
+      fields: action === 'ban' ? '<div class="field" style="text-align:left"><label>Delete their messages from the last…</label><select class="input" id="delDays"><option value="0">Don\'t delete any</option><option value="1">1 day</option><option value="7">7 days</option></select></div>' : '', read: () => ({ days: Number(val('delDays') || 0) }) });
+    if (!r) return; extra = { deleteDays: r.days || 0 };
   }
+  if (action === 'timeout') extra = { minutes: Number(val('mMin')) };
+  busy(btn, true);
+  try { const r = await api('POST', `/api/guild/${gid}/mod/${action}`, { userId: u.id, reason, ...extra }); toast(r.message, 'success'); await memberOpen(u.id); }
+  catch (e) { toast(e.message, 'error'); busy(btn, false); }
+}
+async function loadBans() {
+  const box = $('#banList'); box.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const { bans } = await api('GET', `/api/guild/${gid}/bans`);
+    box.innerHTML = bans.length ? bans.map(b => `<div class="row">${avatar(b.avatar, b.username)}<span class="nm">${esc(b.username)} <small>${esc(b.id)}${b.reason ? ' · ' + esc(b.reason) : ''}</small></span><button class="btn ghost sm" data-act="unban-quick" data-id="${esc(b.id)}"><i class="fas fa-unlock"></i> Unban</button></div>`).join('') : empty('dove', 'Nobody is banned.');
+  } catch (e) { box.innerHTML = empty('triangle-exclamation', esc(e.message)); }
+}
 
-  window.selectGuild = async function(guildId) {
-    const g = guilds.find(x => x.id === guildId);
-    if (!g) return;
-    if (!g.hasBot) { toast('PhineX is not in this server yet. Add it first.', 'error'); return; }
-
-    selectedGuild = g;
-    toast(`Loading ${g.name}…`, 'info');
-
-    try {
-      guildData = await api('GET', `/api/guild/${guildId}`);
-      setupDash();
-      showScreen('dash');
-      switchPanel('overview');
-    } catch(e) {
-      toast('Failed to load server: ' + e.message, 'error');
-    }
-  };
-
-  window.goBack = function() {
-    showScreen('server');
-  };
-
-  // ─── DASH SETUP ───────────────────────────────────────────
-  function setupDash() {
-    const { guild, settings, roles, channels } = guildData;
-    const textChannels = channels.filter(c => c.type === 'text');
-
-    // Header
-    const iconUrl = guild.icon;
-    const iconEl  = $('headerServerIcon');
-    if (iconUrl) iconEl.innerHTML = `<img src="${iconUrl}" style="width:100%;height:100%;border-radius:6px;object-fit:cover;">`;
-    else iconEl.textContent = guild.name.slice(0,2);
-    $('headerServerName').textContent = guild.name;
-
-    // Overview stats
-    $('overviewTitle').textContent = guild.name;
-    $('statMembers').textContent  = guild.memberCount?.toLocaleString() || '—';
-    $('statChannels').textContent = textChannels.length;
-    $('statRoles').textContent    = roles.length;
-
-    // Populate selects
-    const chOpts = `<option value="">— Select channel —</option>` + textChannels.map(c => `<option value="${c.id}">#${esc(c.name)}</option>`).join('');
-    const rlOpts = `<option value="">— Select role —</option>` + roles.filter(r => r.name !== '@everyone').map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
-
-    ['welcomeChannel','suggestionsChannel','starboardChannel','ticketChannel'].forEach(id => {
-      const el = $(id); if (el) el.innerHTML = chOpts;
-    });
-    $('ticketRole').innerHTML = rlOpts;
-
-    // Pre-fill saved settings
-    if (settings.welcome_channel)  setSelectVal('welcomeChannel',   settings.welcome_channel);
-    if (settings.welcome_message)  $('welcomeMessage').value  = settings.welcome_message;
-    if (settings.suggestions_channel) setSelectVal('suggestionsChannel', settings.suggestions_channel);
-    if (settings.starboard_channel) setSelectVal('starboardChannel', settings.starboard_channel);
-    if (settings.starboard_emoji)   $('starboardEmoji').value   = settings.starboard_emoji;
-    if (settings.starboard_threshold) $('starboardThreshold').value = settings.starboard_threshold;
-
-    // Roles & Channels lists
-    renderRolesList(roles);
-    renderChannelsList(channels);
-
-    // Sidebar nav
-    document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
-      item.onclick = () => switchPanel(item.dataset.panel);
-    });
+/* ── auto-moderation ── */
+panels.automod = {
+  title: 'Auto-Moderation', sub: 'Filter bad behaviour automatically. Members with Manage Messages are always exempt.',
+  render() {
+    const a = G.settings.automod;
+    return `${card('Filters', '', `
+      ${toggle('amOn', a.enabled, 'Enable AutoMod', 'Master switch for everything below.')}
+      ${toggle('amInv', a.blockInvites, 'Block Discord invite links')}
+      ${toggle('amLink', a.blockLinks, 'Block all links')}
+      ${toggle('amSpam', a.spam.enabled, 'Anti-spam', 'Removes bursts of messages from one member.')}
+      <div class="g3" style="margin-top:14px">${field('Spam: messages', `<input class="input" type="number" id="amSpamN" min="2" max="30" value="${a.spam.messages}">`)}${field('…within seconds', `<input class="input" type="number" id="amSpamS" min="2" max="60" value="${a.spam.seconds}">`)}${field('Max mentions (0 = off)', `<input class="input" type="number" id="amMen" min="0" max="50" value="${a.maxMentions}">`)}</div>
+      ${field('Blocked words', `<textarea class="input" id="amWords" placeholder="One per line or comma-separated">${esc(a.badWords.join('\n'))}</textarea>`, 'Whole-word, case-insensitive.')}`)}
+    ${card('Punishment', 'What happens when a filter triggers.', `
+      <div class="g2">${field('Action', `<select class="input" id="amAct"><option value="delete" ${a.action === 'delete' ? 'selected' : ''}>Delete message only</option><option value="warn" ${a.action === 'warn' ? 'selected' : ''}>Delete + warn</option><option value="timeout" ${a.action === 'timeout' ? 'selected' : ''}>Delete + timeout</option></select>`)}
+      ${field('Timeout minutes', `<input class="input" type="number" id="amTo" min="1" max="40320" value="${a.timeoutMinutes}">`)}</div>
+      <div class="g3">${field('Auto-punish at N warnings (0 = off)', `<input class="input" type="number" id="amWarnN" min="0" max="20" value="${a.warnThreshold}">`)}
+      ${field('Then', `<select class="input" id="amThA"><option value="timeout" ${a.thresholdAction === 'timeout' ? 'selected' : ''}>Timeout</option><option value="kick" ${a.thresholdAction === 'kick' ? 'selected' : ''}>Kick</option><option value="ban" ${a.thresholdAction === 'ban' ? 'selected' : ''}>Ban</option></select>`)}
+      ${field('Timeout minutes', `<input class="input" type="number" id="amThM" min="1" max="40320" value="${a.thresholdMinutes}">`)}</div>`)}
+    ${card('Exemptions', '', `<div class="g2">${checkList('amIgCh', chans(), a.ignoredChannels, 'Ignored channels')}${checkList('amIgRo', roleList(), a.ignoredRoles, 'Ignored roles')}</div>
+      <div class="actions"><button class="btn primary" data-act="save-automod"><i class="fas fa-floppy-disk"></i> Save AutoMod</button></div>`)}`;
   }
+};
 
-  function setSelectVal(id, val) {
-    const el = $(id); if (!el) return;
-    const opt = el.querySelector(`option[value="${val}"]`);
-    if (opt) opt.selected = true;
+panels.logs = {
+  title: 'Mod Logs', sub: 'Every moderation action, from commands, AutoMod and this dashboard.',
+  render() {
+    return card('', '', `<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"><select class="input" id="logType" style="max-width:200px"><option value="">All actions</option>${['ban', 'unban', 'kick', 'timeout', 'untimeout', 'warn', 'automod', 'clearwarns'].map(t => `<option>${t}</option>`).join('')}</select><button class="btn ghost" data-act="logs-load"><i class="fas fa-rotate"></i> Refresh</button></div><div id="logBox"></div>`);
+  },
+  bind() { $('#logType').addEventListener('change', loadLogs); loadLogs(); }
+};
+const typeBadge = t => ({ ban: 'b-red', kick: 'b-gold', timeout: 'b-blue', warn: 'b-gold', automod: 'b-blue', unban: 'b-green', untimeout: 'b-green' }[t] || '');
+async function loadLogs() {
+  const box = $('#logBox'); if (!box) return; box.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const { logs, users } = await api('GET', `/api/guild/${gid}/logs?limit=100${val('logType') ? '&type=' + encodeURIComponent(val('logType')) : ''}`);
+    const who = id => { const u = users[id]; return `<div class="who">${avatar(u && u.avatar, u ? u.username : id)}<div><span class="td-m">${esc(u ? u.username : id)}</span><small>${esc(id)}</small></div></div>`; };
+    box.innerHTML = logs.length ? `<div class="tw"><table><thead><tr><th>Action</th><th>User</th><th>Moderator</th><th>Reason</th><th>When</th></tr></thead><tbody>${logs.map(l => `<tr><td><span class="badge ${typeBadge(l.type)}">${esc(l.type)}</span></td><td>${who(l.user_id)}</td><td>${who(l.moderator_id)}</td><td style="max-width:260px">${esc(l.reason || '—')}</td><td title="${esc(dt(l.created_at))}" style="white-space:nowrap">${timeAgo(l.created_at)}</td></tr>`).join('')}</tbody></table></div>` : empty('clipboard-check', 'No matching actions.');
+  } catch (e) { box.innerHTML = empty('triangle-exclamation', esc(e.message)); }
+}
+
+/* ── leveling ── */
+panels.leveling = {
+  title: 'Leveling', sub: 'Members earn XP for chatting, level up, and unlock role rewards.',
+  async render() {
+    const l = G.settings.leveling;
+    let lb = { rows: [], users: {} }; try { lb = await api('GET', `/api/guild/${gid}/leaderboard?limit=25`); } catch {}
+    return `${card('Settings', 'Use <code>/rank</code> and <code>/leaderboard</code> in Discord.', `
+      ${toggle('lvOn', l.enabled, 'Enable leveling')}
+      <div class="g3" style="margin-top:14px">${field('XP per message (min)', `<input class="input" type="number" id="lvMin" min="1" max="500" value="${l.xpMin}">`)}${field('XP per message (max)', `<input class="input" type="number" id="lvMax" min="1" max="1000" value="${l.xpMax}">`)}${field('Cooldown (seconds)', `<input class="input" type="number" id="lvCd" min="5" max="3600" value="${l.cooldown}">`)}</div>
+      <div class="g2">${field('Level-up announcement', `<select class="input" id="lvAnn"><option value="channel" ${l.announce === 'channel' ? 'selected' : ''}>In a channel</option><option value="dm" ${l.announce === 'dm' ? 'selected' : ''}>Direct message</option><option value="off" ${l.announce === 'off' ? 'selected' : ''}>Off</option></select>`)}${field('Announcement channel', chSel('lvCh', l.channelId, '— Same channel as the message —'))}</div>
+      ${field('Message', `<input class="input" id="lvMsg" maxlength="300" value="${esc(l.message)}">`, 'Variables: {user} {username} {server} {level}')}
+      <div class="lbl" style="margin-bottom:8px">Role rewards</div><div id="rewards">${l.roleRewards.map(rewardRow).join('')}</div>
+      <button class="btn ghost sm" data-act="reward-add" style="margin-bottom:16px"><i class="fas fa-plus"></i> Add reward</button>
+      ${checkList('lvIg', chans(), l.ignoredChannels, 'Channels that give no XP')}
+      <div class="actions"><button class="btn primary" data-act="save-leveling"><i class="fas fa-floppy-disk"></i> Save leveling</button></div>`)}
+    ${card('Leaderboard', 'Top 25 members.', lb.rows.length ? `<div class="tw"><table><thead><tr><th>#</th><th>Member</th><th>Level</th><th>XP</th><th>Messages</th></tr></thead><tbody>${lb.rows.map((r, i) => { const u = lb.users[r.user_id]; return `<tr><td class="td-m">${i + 1}</td><td><div class="who">${avatar(u && u.avatar, u ? u.username : r.user_id)}<span class="td-m">${esc(u ? u.username : r.user_id)}</span></div></td><td><span class="badge b-green">Lv ${r.level}</span></td><td>${r.xp.toLocaleString()}</td><td>${r.messages}</td></tr>`; }).join('')}</tbody></table></div>` : empty('ranking-star', 'Nobody has earned XP yet.'))}`;
   }
+};
+const rewardRow = r => `<div class="rew"><input class="input rw-lv" type="number" min="1" max="500" placeholder="Level" value="${r ? esc(r.level) : ''}"><select class="input rw-ro">${options(roleList(), r && r.roleId, '— Role —')}</select><button class="btn ghost sm" data-act="reward-del"><i class="fas fa-xmark"></i></button></div>`;
 
-  function esc(s) {
-    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+/* ── giveaways ── */
+panels.giveaways = {
+  title: 'Giveaways', sub: 'Members enter by reacting with 🎉. Winners are picked automatically, even after a restart.',
+  async render() {
+    const { giveaways } = await api('GET', `/api/guild/${gid}/giveaways`);
+    return `${card('Start a giveaway', '', `
+      <div class="g2">${field('Channel', chSel('gwCh', '', '— Pick a channel —'))}${field('Prize', '<input class="input" id="gwPrize" maxlength="200" placeholder="Discord Nitro">')}</div>
+      <div class="g3">${field('Winners', '<input class="input" type="number" id="gwWin" min="1" max="20" value="1">')}${field('Duration', '<input class="input" type="number" id="gwDur" min="1" value="1">')}${field('Unit', '<select class="input" id="gwUnit"><option value="1">Minutes</option><option value="60" selected>Hours</option><option value="1440">Days</option></select>')}</div>
+      <div class="actions"><button class="btn primary" data-act="gw-start"><i class="fas fa-gift"></i> Start giveaway</button></div>`)}
+    ${card('Recent giveaways', '', giveaways.length ? giveaways.map(g => { const live = !g.ended; const ch = G.channels.find(c => c.id === g.channel_id); return `<div class="row"><span class="badge ${live ? 'b-green' : ''}">${live ? 'Active' : 'Ended'}</span><span class="nm">${esc(g.prize)} <small>· ${g.winners} winner${g.winners > 1 ? 's' : ''} · ${ch ? '#' + esc(ch.name) : ''} · ${live ? 'ends ' + dt(Number(g.end_time)) : 'ended'}</small></span>${live ? `<button class="btn ghost sm" data-act="gw-end" data-id="${esc(g.message_id)}">End now</button>` : ''}</div>`; }).join('') : empty('gift', 'No giveaways yet.'))}`;
   }
+};
 
-  // ─── PANEL SWITCHING ──────────────────────────────────────
-  window.switchPanel = function(name) {
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-item[data-panel]').forEach(i => i.classList.remove('active'));
-    const panel = $(`panel-${name}`);
-    const nav   = document.querySelector(`.nav-item[data-panel="${name}"]`);
-    if (panel) panel.classList.add('active');
-    if (nav)   nav.classList.add('active');
+/* ── starboard & suggestions ── */
+panels.starboard = {
+  title: 'Starboard & Suggestions', sub: 'Highlight great messages and collect member ideas.',
+  render() {
+    const s = G.settings;
+    return `${card('Starboard', 'Messages that reach the star threshold are reposted in the starboard channel.', `
+      <div class="g3">${field('Channel', chSel('sbCh', s.starboard_channel))}${field('Emoji', `<input class="input" id="sbEmoji" maxlength="64" value="${esc(s.starboard_emoji)}">`)}${field('Stars needed', `<input class="input" type="number" id="sbN" min="1" max="50" value="${s.starboard_threshold}">`)}</div>
+      <div class="actions"><button class="btn primary" data-act="save-starboard"><i class="fas fa-floppy-disk"></i> Save starboard</button></div>`)}
+    ${card('Suggestions', 'Members use <code>/suggest</code>; posts get 👍 / 👎 reactions.', `${field('Suggestions channel', chSel('sgCh', s.suggestions_channel))}<div class="actions"><button class="btn primary" data-act="save-suggest"><i class="fas fa-floppy-disk"></i> Save</button></div>`)}`;
+  }
+};
 
-    if (name === 'logs')     loadLogs();
-    if (name === 'tickets')  loadTicketStats();
-    if (name === 'social')   loadSocial();
-    if (name === 'roles')    renderRolesList(guildData?.roles);
-    if (name === 'channels') renderChannelsList(guildData?.channels);
-  };
-
-  // ─── SAVE: WELCOME ────────────────────────────────────────
-  window.saveWelcome = async function() {
-    const channel = $('welcomeChannel').value;
-    const message = $('welcomeMessage').value.trim();
-    if (!channel) { toast('Select a welcome channel.', 'error'); return; }
-    try {
-      await api('POST', `/api/guild/${selectedGuild.id}/settings`, { welcome_channel: channel, welcome_message: message });
-      toast('Welcome settings saved!', 'success');
-    } catch(e) { toast('Failed to save: ' + e.message, 'error'); }
-  };
-
-  // ─── SAVE: SUGGESTIONS ───────────────────────────────────
-  window.saveSuggestions = async function() {
-    const channel = $('suggestionsChannel').value;
-    if (!channel) { toast('Select a suggestions channel.', 'error'); return; }
-    try {
-      await api('POST', `/api/guild/${selectedGuild.id}/settings`, { suggestions_channel: channel });
-      toast('Suggestions channel saved!', 'success');
-    } catch(e) { toast('Failed to save: ' + e.message, 'error'); }
-  };
-
-  // ─── SAVE: STARBOARD ─────────────────────────────────────
-  window.saveStarboard = async function() {
-    const channel   = $('starboardChannel').value;
-    const emoji     = $('starboardEmoji').value.trim() || '⭐';
-    const threshold = parseInt($('starboardThreshold').value) || 3;
-    if (!channel) { toast('Select a starboard channel.', 'error'); return; }
-    try {
-      await api('POST', `/api/guild/${selectedGuild.id}/settings`, {
-        starboard_channel:   channel,
-        starboard_emoji:     emoji,
-        starboard_threshold: threshold
-      });
-      toast('Starboard settings saved!', 'success');
-    } catch(e) { toast('Failed to save: ' + e.message, 'error'); }
-  };
-
-  // ─── MODERATION ──────────────────────────────────────────
-  window.lookupUser = async function() {
-    const userId = $('modUserId').value.trim();
-    if (!userId) return;
-    try {
-      const res = await fetch(`https://discord.com/api/v10/users/${userId}`, {
-        headers: { 'Authorization': `Bot ${token}` }
-      });
-      // We don't have a Bot token here, so show ID as confirmation
-      $('modUserName').textContent = `User ID: ${userId}`;
-      $('modUserMeta').textContent = 'ID confirmed. Select an action below.';
-      $('modUserInfo').style.display = 'block';
-    } catch(e) {
-      $('modUserName').textContent = `User ID: ${userId}`;
-      $('modUserMeta').textContent = 'Ready for action.';
-      $('modUserInfo').style.display = 'block';
-    }
-  };
-
-  window.modAction = async function(action) {
-    const userId = $('modUserId').value.trim();
-    const reason = $('modReason').value.trim();
-    if (!userId) { toast('Enter a User ID first.', 'error'); return; }
-    try {
-      if (action === 'warn') {
-        await api('POST', `/api/guild/${selectedGuild.id}/member/${userId}/warn`, { reason });
-        toast(`⚠️ Warning issued to ${userId}`, 'success');
-      }
-    } catch(e) { toast('Action failed: ' + e.message, 'error'); }
-  };
-
-  window.confirmAction = function(action) {
-    const userId = $('modUserId').value.trim();
-    if (!userId) { toast('Enter a User ID first.', 'error'); return; }
-    dialogAction = action;
-    $('dialogTitle').textContent = action === 'ban' ? '🚫 Ban Member' : '👢 Kick Member';
-    $('dialogText').textContent  = `This will ${action} user ${userId} from ${selectedGuild.name}.`;
-    $('dialogConfirmInput').placeholder = action;
-    $('dialogConfirmInput').value = '';
-    $('confirmDialog').classList.add('active');
-    $('dialogConfirmBtn').onclick = async () => {
-      if ($('dialogConfirmInput').value.toLowerCase() !== action) {
-        toast(`Type "${action}" to confirm.`, 'error'); return;
-      }
-      closeDialog();
-      const reason = $('modReason').value.trim();
-      const userId2 = $('modUserId').value.trim();
-      try {
-        await api('POST', `/api/guild/${selectedGuild.id}/member/${userId2}/${action}`, { reason });
-        toast(`✅ User ${action}ned successfully.`, 'success');
-      } catch(e) { toast(`Failed to ${action}: ` + e.message, 'error'); }
+/* ── announcements ── */
+panels.announce = {
+  title: 'Announcements', sub: 'Send a message or a rich embed to any channel.',
+  render() {
+    return `<div class="g2" style="align-items:start">${card('Compose', '', `
+      ${field('Channel', chSel('anCh', '', '— Pick a channel —'))}
+      ${field('Plain message (optional)', '<textarea class="input" id="anMsg" maxlength="2000" style="min-height:70px"></textarea>')}
+      ${field('Embed title', '<input class="input" id="anT" maxlength="256">')}
+      ${field('Embed text', '<textarea class="input" id="anD" maxlength="4000"></textarea>')}
+      <div class="g2">${field('Color', '<input class="input" type="color" id="anC" value="#39ff14">')}${field('Footer', '<input class="input" id="anF" maxlength="200">')}</div>
+      ${field('Image URL', '<input class="input" id="anI" placeholder="https://…">')}
+      ${toggle('anPing', false, 'Ping @everyone', 'Use sparingly.')}
+      <div class="actions"><button class="btn primary" data-act="an-send"><i class="fas fa-paper-plane"></i> Send</button></div>`)}
+    ${card('Preview', '', `<div id="anPrevMsg" class="embed-d" style="margin-bottom:10px;color:#dbdee1;white-space:pre-wrap"></div><div class="embed"><div class="embed-bar" id="anBar"></div><div class="embed-b"><div class="embed-t" id="anPT"></div><div class="embed-d" id="anPD"></div><img id="anPI" alt="" hidden><div class="embed-f" id="anPF"></div></div></div>`)}</div>`;
+  },
+  bind() {
+    const upd = () => {
+      $('#anPrevMsg').textContent = val('anMsg'); $('#anBar').style.background = val('anC'); $('#anPT').textContent = val('anT'); $('#anPD').textContent = val('anD') || (val('anT') ? '' : 'Your embed preview appears here.');
+      $('#anPF').textContent = val('anF'); const i = $('#anPI'); const u = val('anI'); if (/^https?:\/\//.test(u)) { i.src = u; i.hidden = false; } else i.hidden = true;
     };
-  };
-
-  window.closeDialog = function() {
-    $('confirmDialog').classList.remove('active');
-    dialogAction = null;
-  };
-
-  // ─── MOD LOGS ────────────────────────────────────────────
-  window.loadLogs = async function() {
-    const el = $('logsContent');
-    el.innerHTML = '<div class="loading-block"><div class="spinner"></div><span>Loading…</span></div>';
-    try {
-      const { logs } = await api('GET', `/api/guild/${selectedGuild.id}/logs?limit=50`);
-      if (!logs || !logs.length) {
-        el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p class="empty-text">No moderation actions recorded yet.</p></div>';
-        return;
-      }
-      const typeMap = { ban:'badge-red', kick:'badge-gold', warn:'badge-blue', timeout:'badge-gray' };
-      el.innerHTML = `<div class="table-wrap"><table>
-        <thead><tr><th>Type</th><th>User ID</th><th>Moderator</th><th>Reason</th><th>Date</th></tr></thead>
-        <tbody>${logs.map(l => `<tr>
-          <td><span class="badge ${typeMap[l.type]||'badge-gray'}">${esc(l.type.toUpperCase())}</span></td>
-          <td class="td-main">${esc(l.user_id)}</td>
-          <td>${esc(l.moderator_id)}</td>
-          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(l.reason||'No reason')}</td>
-          <td>${new Date(l.created_at).toLocaleDateString()}</td>
-        </tr>`).join('')}
-        </tbody>
-      </table></div>`;
-    } catch(e) {
-      el.innerHTML = `<div class="empty"><p class="empty-text">Failed to load logs: ${esc(e.message)}</p></div>`;
-    }
-  };
-
-  // ─── WARNINGS ────────────────────────────────────────────
-  window.loadWarnings = async function() {
-    const userId = $('warnUserId').value.trim();
-    const el     = $('warningsContent');
-    if (!userId) { toast('Enter a User ID.', 'error'); return; }
-    el.innerHTML = '<div class="loading-block" style="padding:20px"><div class="spinner"></div></div>';
-    try {
-      const { warnings } = await api('GET', `/api/guild/${selectedGuild.id}/warnings/${userId}`);
-      if (!warnings || !warnings.length) {
-        el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--accent);font-size:14px;"><i class="fas fa-check-circle"></i> No warnings found for this user.</div>`;
-        return;
-      }
-      el.innerHTML = `<div style="margin-top:12px;font-size:12px;color:var(--text3);margin-bottom:8px;"><span class="badge badge-red">${warnings.length} warning${warnings.length>1?'s':''}</span></div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>#</th><th>Reason</th><th>Moderator</th><th>Date</th></tr></thead>
-        <tbody>${warnings.map((w,i) => `<tr>
-          <td class="td-main">${i+1}</td>
-          <td>${esc(w.reason||'No reason')}</td>
-          <td>${esc(w.moderator_id)}</td>
-          <td>${new Date(w.created_at).toLocaleDateString()}</td>
-        </tr>`).join('')}</tbody>
-      </table></div>`;
-    } catch(e) {
-      el.innerHTML = `<div style="padding:20px;color:var(--red);font-size:13px;">Error: ${esc(e.message)}</div>`;
-    }
-  };
-
-  // ─── TICKET STATS ────────────────────────────────────────
-  async function loadTicketStats() {
-    try {
-      const { stats } = await api('GET', `/api/guild/${selectedGuild.id}/tickets/stats`);
-      $('tsTotalSupport').textContent  = stats.support.total;
-      $('tsOpenSupport').textContent   = stats.support.open;
-      $('tsClosedSupport').textContent = stats.support.closed;
-      $('tsTotalCommunity').textContent  = stats.community.total;
-      $('tsUsedCommunity').textContent   = stats.community.used;
-      $('tsUnusedCommunity').textContent = stats.community.unused;
-
-      // Prefill ticket settings
-      try {
-        const { settings: ts } = await api('GET', `/api/guild/${selectedGuild.id}/ticket-settings`);
-        if (ts) {
-          setSelectVal('ticketChannel', ts.support_channel_id);
-          setSelectVal('ticketRole', ts.support_role_id);
-        }
-      } catch(e) { /* settings not yet saved */ }
-
-    } catch(e) { /* stats not critical */ }
+    ['anMsg', 'anT', 'anD', 'anC', 'anF', 'anI'].forEach(id => $('#' + id).addEventListener('input', upd)); upd();
   }
+};
 
-  window.saveTicketSettings = async function() {
-    const channelId = $('ticketChannel').value;
-    const roleId    = $('ticketRole').value;
-    if (!channelId) { toast('Select a support channel.', 'error'); return; }
-    try {
-      // Store via guild settings for now (server.js doesn't have a direct route; use existing settings POST)
-      await api('POST', `/api/guild/${selectedGuild.id}/settings`, {
-        ticket_support_channel: channelId,
-        ticket_support_role:    roleId
-      });
-      toast('Ticket settings saved!', 'success');
-    } catch(e) { toast('Failed: ' + e.message, 'error'); }
-  };
-
-  // ─── ROLES ───────────────────────────────────────────────
-  function renderRolesList(roles) {
-    const el = $('rolesList');
-    if (!roles || !roles.length) { el.innerHTML = '<div class="empty"><p class="empty-text">No roles found.</p></div>'; return; }
-    el.innerHTML = `<div class="items-list">${
-      roles.filter(r => r.name !== '@everyone').map(r => `
-        <div class="item-row">
-          <div class="item-color" style="background:${r.color==='#000000'?'#555':r.color};"></div>
-          <span class="item-name">${esc(r.name)}</span>
-          <span class="item-meta">ID: ${r.id}</span>
-          <button class="btn btn-danger btn-xs" onclick="deleteRole('${r.id}','${esc(r.name)}')"><i class="fas fa-trash"></i></button>
-        </div>`).join('')}
-    </div>`;
+/* ── tickets ── */
+panels.tickets = {
+  title: 'Tickets', sub: 'Support tickets and community access codes.',
+  async render() {
+    const { stats, settings } = await api('GET', `/api/guild/${gid}/tickets`);
+    const s = stats;
+    return `<div class="stats"><div class="stat"><small>Support open</small><b style="color:var(--accent)">${s.support.open}</b></div><div class="stat"><small>Support closed</small><b>${s.support.closed}</b></div><div class="stat"><small>Access codes made</small><b>${s.community.total}</b></div><div class="stat"><small>Codes used</small><b style="color:var(--gold)">${s.community.used}</b></div></div>
+    ${card('Support ticket panel', 'Posts a button. Members click it and get a private channel shared with your support role.', `
+      <div class="g2">${field('Post in channel', chSel('tkCh', settings.support_channel_id, '— Pick a channel —'))}${field('Support team role', roleSel('tkRole', settings.support_role_id, '— Pick a role —'))}</div>
+      <div class="g2">${field('Title', '<input class="input" id="tkT" maxlength="200" placeholder="🎫 Support Tickets">')}${field('Button label', '<input class="input" id="tkB" maxlength="80" placeholder="Create Ticket">')}</div>
+      ${field('Description', '<textarea class="input" id="tkD" maxlength="1500" style="min-height:70px" placeholder="Need help? Click the button below…"></textarea>')}
+      <div class="actions"><button class="btn primary" data-act="tk-post" data-id="support"><i class="fas fa-paper-plane"></i> Post support panel</button></div>`)}
+    ${card('Community access panel', 'Members click a button to receive a one-time access code by DM.', `
+      ${field('Post in channel', chSel('cmCh', settings.community_channel_id, '— Pick a channel —'))}
+      <div class="g2">${field('Title', '<input class="input" id="cmT" maxlength="200" placeholder="🌟 PhineX Community Access">')}${field('Button label', '<input class="input" id="cmB" maxlength="80" placeholder="🎫 Get Access Code">')}</div>
+      <div class="actions"><button class="btn primary" data-act="tk-post" data-id="community"><i class="fas fa-paper-plane"></i> Post community panel</button></div>`)}`;
   }
+};
 
-  window.createRole = async function() {
-    const name  = $('newRoleName').value.trim();
-    const color = $('newRoleColor').value;
-    if (!name) { toast('Enter a role name.', 'error'); return; }
-    try {
-      const { role } = await api('POST', `/api/guild/${selectedGuild.id}/role/create`, { name, color });
-      toast(`Role "${role.name}" created!`, 'success');
-      guildData.roles.unshift(role);
-      renderRolesList(guildData.roles);
-      $('newRoleName').value = '';
-    } catch(e) { toast('Failed: ' + e.message, 'error'); }
-  };
-
-  window.deleteRole = async function(roleId, roleName) {
-    if (!confirm(`Delete role "${roleName}"? This cannot be undone.`)) return;
-    try {
-      await api('DELETE', `/api/guild/${selectedGuild.id}/role/${roleId}`);
-      toast(`Role deleted.`, 'success');
-      guildData.roles = guildData.roles.filter(r => r.id !== roleId);
-      renderRolesList(guildData.roles);
-    } catch(e) { toast('Failed: ' + e.message, 'error'); }
-  };
-
-  // ─── CHANNELS ────────────────────────────────────────────
-  function renderChannelsList(channels) {
-    const el = $('channelsList');
-    if (!channels || !channels.length) { el.innerHTML = '<div class="empty"><p class="empty-text">No channels found.</p></div>'; return; }
-    el.innerHTML = `<div class="items-list">${
-      channels.map(c => `
-        <div class="item-row">
-          <span style="font-size:14px;color:var(--text3);">${c.type==='text'?'#':'🔊'}</span>
-          <span class="item-name">${esc(c.name)}</span>
-          <span class="item-meta badge badge-gray" style="text-transform:capitalize;">${c.type}</span>
-          <button class="btn btn-danger btn-xs" onclick="deleteChannel('${c.id}','${esc(c.name)}')"><i class="fas fa-trash"></i></button>
-        </div>`).join('')}
-    </div>`;
+/* ── roles & channels ── */
+panels.roles = {
+  title: 'Roles', sub: 'Create and delete server roles.',
+  render() {
+    return `${card('Create role', '', `<div class="g3">${field('Name', '<input class="input" id="rlName" maxlength="100" placeholder="Member">')}${field('Color', '<input class="input" type="color" id="rlColor" value="#99aab5">')}<div class="field"><label>Options</label><div class="chips" style="padding-top:8px"><label class="chips" style="gap:6px;cursor:pointer"><input type="checkbox" id="rlHoist"> Show separately</label><label class="chips" style="gap:6px;cursor:pointer"><input type="checkbox" id="rlMent"> Mentionable</label></div></div></div>
+      <div class="actions"><button class="btn primary" data-act="role-add"><i class="fas fa-plus"></i> Create role</button></div>`)}
+    ${card(`Roles (${G.roles.length})`, 'Roles marked with a lock are managed by an integration or sit above PhineX\'s role.', `<div id="roleList">${rolesHTML()}</div>`)}`;
   }
+};
+const rolesHTML = () => G.roles.map(r => `<div class="row"><span class="dot" style="background:${esc(r.color === '#000000' ? '#666' : r.color)}"></span><span class="nm">${esc(r.name)}</span><small>${r.members} member${r.members === 1 ? '' : 's'}</small>${r.managed || !r.editable ? '<i class="fas fa-lock" style="color:var(--text3)" title="Cannot be deleted"></i>' : `<button class="btn danger sm" data-act="role-del" data-id="${esc(r.id)}"><i class="fas fa-trash"></i></button>`}</div>`).join('') || empty('tags', 'No roles.');
 
-  window.createChannel = async function() {
-    const name = $('newChannelName').value.trim();
-    const type = $('newChannelType').value;
-    if (!name) { toast('Enter a channel name.', 'error'); return; }
-    try {
-      const { channel } = await api('POST', `/api/guild/${selectedGuild.id}/channel/create`, { name, type });
-      toast(`Channel #${channel.name} created!`, 'success');
-      guildData.channels.push({ ...channel, type: channel.type === 0 ? 'text' : 'voice' });
-      renderChannelsList(guildData.channels);
-      $('newChannelName').value = '';
-    } catch(e) { toast('Failed: ' + e.message, 'error'); }
-  };
-
-  window.deleteChannel = async function(channelId, channelName) {
-    if (!confirm(`Delete #${channelName}? Messages will be permanently lost.`)) return;
-    try {
-      await api('DELETE', `/api/guild/${selectedGuild.id}/channel/${channelId}`);
-      toast(`Channel deleted.`, 'success');
-      guildData.channels = guildData.channels.filter(c => c.id !== channelId);
-      renderChannelsList(guildData.channels);
-    } catch(e) { toast('Failed: ' + e.message, 'error'); }
-  };
-
-  // ─── SOCIAL LINKS ────────────────────────────────────────
-  async function loadSocial() {
-    try {
-      const { socialLinks } = await api('GET', `/api/guild/${selectedGuild.id}/social`);
-      const platforms = ['facebook','instagram','twitter','youtube','linkedin','discord','whatsapp','github'];
-      platforms.forEach(p => {
-        const el = $(`social-${p}`);
-        if (el && socialLinks[p]) el.value = socialLinks[p];
-      });
-    } catch(e) { /* no social set yet */ }
+panels.channels = {
+  title: 'Channels', sub: 'Create and delete channels and categories.',
+  render() {
+    const cats = G.channels.filter(c => c.type === 'category');
+    return `${card('Create channel', '', `<div class="g3">${field('Name', '<input class="input" id="chName" maxlength="100" placeholder="announcements">')}${field('Type', '<select class="input" id="chType"><option value="text">Text</option><option value="announcement">Announcement</option><option value="voice">Voice</option><option value="category">Category</option></select>')}${field('Category', `<select class="input" id="chParent">${options(cats.map(c => ({ id: c.id, label: c.name })), '', '— None —')}</select>`)}</div>
+      <div class="actions"><button class="btn primary" data-act="ch-add"><i class="fas fa-plus"></i> Create</button></div>`)}
+    ${card(`Channels (${G.channels.length})`, '', `<div id="chList">${channelsHTML()}</div>`)}`;
   }
+};
+const CH_ICON = { text: 'hashtag', announcement: 'bullhorn', voice: 'volume-high', stage: 'podcast', forum: 'comments', category: 'folder' };
+function channelsHTML() {
+  const row = (c, ind) => `<div class="row" style="margin-left:${ind ? 22 : 0}px"><i class="fas fa-${CH_ICON[c.type] || 'hashtag'}" style="color:var(--text3);width:16px;text-align:center"></i><span class="nm">${esc(c.name)}</span><span class="badge">${c.type}</span><button class="btn danger sm" data-act="ch-del" data-id="${esc(c.id)}"><i class="fas fa-trash"></i></button></div>`;
+  const cats = G.channels.filter(c => c.type === 'category'), loose = G.channels.filter(c => c.type !== 'category' && !cats.some(k => k.id === c.parentId));
+  return loose.map(c => row(c, 0)).join('') + cats.map(k => row(k, 0) + G.channels.filter(c => c.parentId === k.id && c.type !== 'category').map(c => row(c, 1)).join('')).join('') || empty('hashtag', 'No channels.');
+}
 
-  window.saveSocial = async function() {
-    const platforms = ['facebook','instagram','twitter','youtube','linkedin','discord','whatsapp','github'];
-    const links = {};
-    platforms.forEach(p => {
-      const val = $(`social-${p}`)?.value.trim();
-      if (val) links[p] = val;
-    });
-    try {
-      await api('POST', `/api/guild/${selectedGuild.id}/social`, links);
-      toast('Social links saved!', 'success');
-    } catch(e) { toast('Failed: ' + e.message, 'error'); }
-  };
+/* ── social links ── */
+const SOCIAL = [['facebook', 'fab fa-facebook', '#1877f2'], ['instagram', 'fab fa-instagram', '#e1306c'], ['twitter', 'fab fa-x-twitter', '#000'], ['youtube', 'fab fa-youtube', '#f00'], ['linkedin', 'fab fa-linkedin', '#0a66c2'], ['discord', 'fab fa-discord', '#5865f2'], ['whatsapp', 'fab fa-whatsapp', '#25d366'], ['github', 'fab fa-github', '#333'], ['website', 'fas fa-globe', '#2d7d5f']];
+panels.social = {
+  title: 'Social Links', sub: 'Shown to members with the <code>/social</code> command.',
+  async render() {
+    const { links } = await api('GET', `/api/guild/${gid}/social`);
+    return card('', '', `<div class="g2">${SOCIAL.map(([k, ic, c]) => `<div class="field"><label><i class="${ic}" style="color:${c === '#000' || c === '#333' ? '#aaa' : c};width:18px"></i> ${k}</label><input class="input sc" data-k="${k}" type="url" placeholder="https://…" value="${esc(links[k] || '')}"></div>`).join('')}</div>
+      <div class="actions"><button class="btn primary" data-act="save-social"><i class="fas fa-floppy-disk"></i> Save links</button></div>`);
+  }
+};
 
-  // ─── RUN ─────────────────────────────────────────────────
-  init();
+/* ───────────────────────── actions (event delegation) ───────────────────────── */
+const actions = {
+  'login': () => startLogin(),
+  'cancel-login': () => { stopWatch(); try { popup && popup.close(); } catch {} showLogin('idle'); },
+  'logout': () => logout(),
+  'close-modal': () => closeModal(),
+  'confirm-yes': () => confirmResolve && confirmResolve(true),
+  'confirm-no': () => confirmResolve && confirmResolve(false),
+  'retry-boot': () => bootstrap(),
+  'toggle-nav': () => $('#sidebar').classList.toggle('open'),
+  'to-servers': () => showServers(),
+  'nav': el => switchPanel(el.dataset.id),
+  'refresh-guilds': async el => { busy(el, true); try { guilds = await api('GET', '/api/guilds?refresh=1'); renderServers(); toast('Server list refreshed.', 'success'); } catch (e) { toast(e.message, 'error'); } busy(el, false); },
+  'pick-server': el => { const g = guilds.find(x => x.id === el.dataset.id); g && (g.hasBot ? openGuild(g.id) : startInvite(g)); },
+  'retry-invite': () => inviteCtx && startInvite(inviteCtx.g),
+  'close-invite': () => { stopWatch(); try { popup && popup.close(); } catch {} inviteCtx = null; closeModal(); },
+  'fix-perms': () => { const g = guilds.find(x => x.id === gid) || G.guild; inviteCtx = { g, authorized: false, startedAt: Date.now() }; popup = openPopup('/invite?guild=' + gid, 'phinex_invite'); if (popup) { renderInvite(); poll = setInterval(() => { if (popup.closed) { stopWatch(); closeModal(); openGuild(gid); } }, 1000); } },
 
+  'save-welcome': el => saveSettings({ welcome_channel: val('wCh'), welcome_role: val('wRole'), welcome_message: val('wMsg') }, el, 'Welcome settings saved!'),
+  'save-leave': el => saveSettings({ leave_channel: val('lCh'), leave_message: val('lMsg') }, el, 'Leave message saved!'),
+  'save-logging': el => saveSettings({ log_channel: val('logCh'), logging: { joins: on('lgJoin'), leaves: on('lgLeave'), messageDeletes: on('lgDel'), messageEdits: on('lgEdit'), moderation: on('lgMod') } }, el, 'Logging saved!'),
+  'save-starboard': el => saveSettings({ starboard_channel: val('sbCh'), starboard_emoji: val('sbEmoji') || '⭐', starboard_threshold: Number(val('sbN')) || 3 }, el, 'Starboard saved!'),
+  'save-suggest': el => saveSettings({ suggestions_channel: val('sgCh') }, el, 'Suggestions channel saved!'),
+  'save-automod': el => saveSettings({ automod: {
+    enabled: on('amOn'), blockInvites: on('amInv'), blockLinks: on('amLink'), badWords: val('amWords').split(/[\n,]+/).map(w => w.trim()).filter(Boolean), maxMentions: Number(val('amMen')),
+    spam: { enabled: on('amSpam'), messages: Number(val('amSpamN')), seconds: Number(val('amSpamS')) }, action: val('amAct'), timeoutMinutes: Number(val('amTo')),
+    ignoredChannels: checked('amIgCh'), ignoredRoles: checked('amIgRo'), warnThreshold: Number(val('amWarnN')), thresholdAction: val('amThA'), thresholdMinutes: Number(val('amThM')) } }, el, 'AutoMod saved!'),
+  'save-leveling': el => saveSettings({ leveling: {
+    enabled: on('lvOn'), xpMin: Number(val('lvMin')), xpMax: Number(val('lvMax')), cooldown: Number(val('lvCd')), announce: val('lvAnn'), channelId: val('lvCh'), message: val('lvMsg'),
+    roleRewards: $$('.rew').map(r => ({ level: Number($('.rw-lv', r).value), roleId: $('.rw-ro', r).value })).filter(r => r.level && r.roleId), ignoredChannels: checked('lvIg') } }, el, 'Leveling saved!'),
+  'reward-add': () => $('#rewards').insertAdjacentHTML('beforeend', rewardRow()),
+  'reward-del': el => el.closest('.rew').remove(),
+
+  'cc-add': async el => { busy(el, true); try { await api('POST', `/api/guild/${gid}/commands`, { name: val('ccName'), response: val('ccResp') }); toast('Command saved!', 'success'); switchPanel('commands'); } catch (e) { toast(e.message, 'error'); busy(el, false); } },
+  'cc-del': async el => { try { await api('DELETE', `/api/guild/${gid}/commands/${encodeURIComponent(el.dataset.id)}`); toast('Command removed.', 'success'); switchPanel('commands'); } catch (e) { toast(e.message, 'error'); } },
+
+  'mtab': el => { $$('.tab').forEach(t => t.classList.toggle('on', t === el)); $('#m-find').hidden = el.dataset.id !== 'find'; $('#m-bans').hidden = el.dataset.id !== 'bans'; if (el.dataset.id === 'bans') loadBans(); },
+  'member-search': () => memberSearch(),
+  'member-open': el => memberOpen(el.dataset.id),
+  'mod': (el) => modAct(el.dataset.id, el),
+  'warn-del': async el => { try { await api('DELETE', `/api/guild/${gid}/warning/${el.dataset.id}`); toast('Warning removed.', 'success'); memberOpen(memberView.user.id); } catch (e) { toast(e.message, 'error'); } },
+  'warn-clear': async () => { if (!await confirmBox({ title: 'Clear all warnings?', text: 'This removes every warning for this member.', confirm: 'Clear warnings' })) return; try { await api('DELETE', `/api/guild/${gid}/warnings/${memberView.user.id}`); toast('Warnings cleared.', 'success'); memberOpen(memberView.user.id); } catch (e) { toast(e.message, 'error'); } },
+  'unban-quick': async el => { try { await api('POST', `/api/guild/${gid}/mod/unban`, { userId: el.dataset.id, reason: 'Unbanned from dashboard' }); toast('Unbanned.', 'success'); loadBans(); } catch (e) { toast(e.message, 'error'); } },
+  'logs-load': () => loadLogs(),
+
+  'gw-start': async el => { busy(el, true); try { await api('POST', `/api/guild/${gid}/giveaways`, { channelId: val('gwCh'), prize: val('gwPrize'), winners: Number(val('gwWin')), durationMinutes: Number(val('gwDur')) * Number(val('gwUnit')) }); toast('Giveaway started!', 'success'); switchPanel('giveaways'); } catch (e) { toast(e.message, 'error'); busy(el, false); } },
+  'gw-end': async el => { try { await api('POST', `/api/guild/${gid}/giveaways/${el.dataset.id}/end`); toast('Giveaway ended.', 'success'); switchPanel('giveaways'); } catch (e) { toast(e.message, 'error'); } },
+
+  'an-send': async el => { busy(el, true); try { await api('POST', `/api/guild/${gid}/send`, { channelId: val('anCh'), content: val('anMsg'), pingEveryone: on('anPing'), embed: { title: val('anT'), description: val('anD'), color: val('anC'), footer: val('anF'), imageUrl: val('anI') } }); toast('Sent!', 'success'); } catch (e) { toast(e.message, 'error'); } busy(el, false); },
+  'tk-post': async el => {
+    const support = el.dataset.id === 'support'; busy(el, true);
+    try { await api('POST', `/api/guild/${gid}/tickets/panel`, support ? { kind: 'support', channelId: val('tkCh'), roleId: val('tkRole'), title: val('tkT'), description: val('tkD'), buttonLabel: val('tkB') } : { kind: 'community', channelId: val('cmCh'), title: val('cmT'), buttonLabel: val('cmB') }); toast('Panel posted!', 'success'); }
+    catch (e) { toast(e.message, 'error'); } busy(el, false);
+  },
+
+  'role-add': async el => { busy(el, true); try { const { role } = await api('POST', `/api/guild/${gid}/roles`, { name: val('rlName'), color: val('rlColor'), hoist: on('rlHoist'), mentionable: on('rlMent') }); G.roles.unshift(role); $('#roleList').innerHTML = rolesHTML(); $('#rlName').value = ''; toast(`Role "${role.name}" created.`, 'success'); } catch (e) { toast(e.message, 'error'); } busy(el, false); },
+  'role-del': async el => { const r = G.roles.find(x => x.id === el.dataset.id); if (!await confirmBox({ title: `Delete "${r.name}"?`, text: 'Members will lose this role. This cannot be undone.', confirm: 'Delete role' })) return; try { await api('DELETE', `/api/guild/${gid}/roles/${r.id}`); G.roles = G.roles.filter(x => x.id !== r.id); $('#roleList').innerHTML = rolesHTML(); toast('Role deleted.', 'success'); } catch (e) { toast(e.message, 'error'); } },
+  'ch-add': async el => { busy(el, true); try { const { channel } = await api('POST', `/api/guild/${gid}/channels`, { name: val('chName'), type: val('chType'), parentId: val('chParent') }); G.channels.push(channel); $('#chList').innerHTML = channelsHTML(); $('#chName').value = ''; toast(`#${channel.name} created.`, 'success'); } catch (e) { toast(e.message, 'error'); } busy(el, false); },
+  'ch-del': async el => { const c = G.channels.find(x => x.id === el.dataset.id); if (!await confirmBox({ title: `Delete ${c.name}?`, text: 'All of its messages are permanently lost.', confirm: 'Delete channel' })) return; try { await api('DELETE', `/api/guild/${gid}/channels/${c.id}`); G.channels = G.channels.filter(x => x.id !== c.id); $('#chList').innerHTML = channelsHTML(); toast('Channel deleted.', 'success'); } catch (e) { toast(e.message, 'error'); } },
+  'save-social': async el => { busy(el, true); const links = {}; $$('.sc').forEach(i => links[i.dataset.k] = i.value.trim()); try { await api('POST', `/api/guild/${gid}/social`, { links }); toast('Social links saved!', 'success'); } catch (e) { toast(e.message, 'error'); } busy(el, false); }
+};
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  const fn = actions[el.dataset.act];
+  if (fn) { if (el.tagName === 'A') e.preventDefault(); fn(el, e); }
+});
+document.addEventListener('change', e => {
+  const cl = e.target.closest('.checklist');
+  if (cl) cl.querySelector('summary b').textContent = cl.querySelectorAll('input:checked').length;
+});
+document.addEventListener('input', e => { if (e.target.id === 'serverSearch') renderServers(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal.open .modal-bg[data-act]')) closeModal(); });
+
+/* ───────────────────────── start ───────────────────────── */
+readHash();
+token = token || store.get(KEY);
+if (token) bootstrap(); else showLogin('idle', loginMsg);
 })();
 </script>
 </body>
