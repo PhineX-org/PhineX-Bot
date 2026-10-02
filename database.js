@@ -49,10 +49,17 @@ class Database {
                 guild_id TEXT PRIMARY KEY,
                 welcome_channel TEXT,
                 welcome_message TEXT,
+                welcome_role TEXT,
+                leave_channel TEXT,
+                leave_message TEXT,
                 suggestions_channel TEXT,
                 starboard_channel TEXT,
                 starboard_emoji TEXT DEFAULT '⭐',
-                starboard_threshold INTEGER DEFAULT 3
+                starboard_threshold INTEGER DEFAULT 3,
+                log_channel TEXT,
+                automod TEXT,
+                leveling TEXT,
+                logging TEXT
             )`,
             `CREATE TABLE IF NOT EXISTS role_menus (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -147,6 +154,19 @@ class Database {
                 if (err) console.error('Table init error:', err.message);
             });
         }
+        const additions = [
+            ['welcome_role', 'TEXT'], ['leave_channel', 'TEXT'], ['leave_message', 'TEXT'],
+            ['log_channel', 'TEXT'], ['automod', 'TEXT'], ['leveling', 'TEXT'], ['logging', 'TEXT']
+        ];
+        this.db.all('PRAGMA table_info(guild_settings)', (err, cols = []) => {
+            if (err) return console.error('Settings migration inspect failed:', err.message);
+            const existing = new Set(cols.map(c => c.name));
+            for (const [name, type] of additions) if (!existing.has(name)) {
+                this.db.run(`ALTER TABLE guild_settings ADD COLUMN ${name} ${type}`, e => {
+                    if (e) console.error(`Settings migration failed for ${name}:`, e.message);
+                });
+            }
+        });
         console.log('✓ SQLite tables ready');
     }
 
@@ -184,10 +204,17 @@ class Database {
     // GUILD SETTINGS
     // ═══════════════════════════════════════════════════════════════════════════
     async getGuildSettings(guildId) {
-        return this.get('SELECT * FROM guild_settings WHERE guild_id = ?', [guildId]);
+        const row = await this.get('SELECT * FROM guild_settings WHERE guild_id = ?', [guildId]);
+        if (!row) return { guild_id: guildId, welcome_channel: null, welcome_message: null, welcome_role: null, leave_channel: null, leave_message: null, suggestions_channel: null, starboard_channel: null, starboard_emoji: '⭐', starboard_threshold: 3, log_channel: null, automod: null, leveling: null, logging: null };
+        for (const key of ['automod', 'leveling', 'logging']) if (typeof row[key] === 'string') {
+            try { row[key] = JSON.parse(row[key]); } catch { row[key] = null; }
+        }
+        return row;
     }
 
     async updateGuildSettings(guildId, updates = {}) {
+        updates = { ...updates };
+        for (const key of ['automod', 'leveling', 'logging']) if (updates[key] && typeof updates[key] !== 'string') updates[key] = JSON.stringify(updates[key]);
         const existing = await this.getGuildSettings(guildId);
         if (!existing) {
             const cols   = ['guild_id', ...Object.keys(updates)];
@@ -199,10 +226,16 @@ class Database {
             );
         } else {
             const setClauses = Object.keys(updates).map(k => `${k} = ?`).join(', ');
-            return this.run(
+            const result = await this.run(
                 `UPDATE guild_settings SET ${setClauses} WHERE guild_id = ?`,
                 [...Object.values(updates), guildId]
             );
+            if (!result.changes) {
+                const cols = ['guild_id', ...Object.keys(updates)];
+                const vals = [guildId, ...Object.values(updates)];
+                return this.run(`INSERT INTO guild_settings (${cols.join(', ')}) VALUES (${vals.map(() => '?').join(', ')})`, vals);
+            }
+            return result;
         }
     }
 

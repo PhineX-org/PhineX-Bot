@@ -27,6 +27,27 @@ const snow = v => /^\d{15,25}$/.test(String(v || ''));
 const app = express();
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
+const dashboardOrigin = (() => { try { return new URL(config.dashboardURL).origin; } catch { return config.baseUrl; } })();
+const dashboardPage = hash => {
+    try {
+        const u = new URL(config.dashboardURL);
+        if (u.pathname === '/' || !u.pathname) u.pathname = '/dashboard';
+        u.hash = String(hash || '').replace(/^#/, '');
+        return u.toString();
+    } catch { return `${config.baseUrl}/dashboard${hash || ''}`; }
+};
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && (origin === dashboardOrigin || origin === config.baseUrl)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+        res.setHeader('Vary', 'Origin');
+    }
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    next();
+});
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -80,7 +101,7 @@ function popupPage(payload, fallback, heading, sub) {
 @keyframes r{to{transform:rotate(360deg)}}h1{font-size:20px;margin:0 0 6px}p{color:#8b90a8;margin:0}a{color:#2de08a}</style></head>
 <body><div class="b"><div class="s"></div><h1>${heading}</h1><p>${sub} <a href="${fallback}">Continue</a></p></div>
 <script>(function(){var msg=${js(payload)},fb=${js(fallback)};
-try{if(window.opener&&!window.opener.closed){window.opener.postMessage(msg,location.origin);setTimeout(function(){window.close()},200);return;}}catch(e){}
+try{if(window.opener&&!window.opener.closed){window.opener.postMessage(msg,${JSON.stringify(dashboardOrigin)});setTimeout(function(){window.close()},200);return;}}catch(e){}
 setTimeout(function(){location.replace(fb)},300);})();</script></body></html>`;
 }
 const noStore = res => res.setHeader('Cache-Control', 'no-store');
@@ -91,7 +112,7 @@ app.get('/auth/login', (req, res) => {
     res.setHeader('Set-Cookie', nonceCookie(nonce, 600));
     noStore(res);
     res.redirect(AUTHORIZE_URL + '?' + new URLSearchParams({
-        client_id: config.clientId, response_type: 'code', scope: 'identify guilds', state, prompt: 'none',
+        client_id: config.clientId, response_type: 'code', scope: 'identify guilds', state, prompt: 'consent',
         redirect_uri: `${config.baseUrl}/auth/callback`
     }));
 });
@@ -100,7 +121,7 @@ app.get('/auth/callback', ah(async (req, res) => {
     noStore(res);
     res.setHeader('Set-Cookie', nonceCookie('', 0));
     const fail = msg => res.send(popupPage({ type: 'phinex-auth-error', error: msg },
-        '/dashboard#error=' + encodeURIComponent(msg), 'Login failed', msg));
+        dashboardPage('#error=' + encodeURIComponent(msg)), 'Login failed', msg));
     if (req.query.error) return fail('Login was cancelled.');
     try {
         const st = jwt.verify(String(req.query.state || ''), SECRET);
@@ -127,7 +148,7 @@ app.get('/auth/callback', ah(async (req, res) => {
 
     const session = jwt.sign({ id: me.id, username: me.username, name: me.global_name || me.username, avatar: me.avatar, at: tok.access_token },
         SECRET, { expiresIn: Math.min(Number(tok.expires_in) || 604800, 6 * 86400) });
-    res.send(popupPage({ type: 'phinex-auth', token: session }, '/dashboard#token=' + session, 'Logged in!', 'Returning to the dashboard…'));
+    res.send(popupPage({ type: 'phinex-auth', token: session }, dashboardPage('#token=' + session), 'Logged in!', 'Returning to the dashboard…'));
 }));
 
 // Bot invite that RETURNS to us (the old invite URL had no redirect, so nothing happened after authorizing)
@@ -146,10 +167,13 @@ app.get('/invite', (req, res) => {
 app.get('/auth/bot-callback', (req, res) => {
     noStore(res);
     if (req.query.error) {
-        return res.send(popupPage({ type: 'phinex-bot-error', error: 'cancelled' }, '/dashboard', 'Invite cancelled', 'Nothing was changed.'));
+        return res.send(popupPage({ type: 'phinex-bot-error', error: 'cancelled' }, dashboardPage(), 'Invite cancelled', 'Nothing was changed.'));
     }
-    const guildId = snow(req.query.guild_id) ? String(req.query.guild_id) : null;
-    res.send(popupPage({ type: 'phinex-bot-added', guildId }, '/dashboard' + (guildId ? '#added=' + guildId : ''),
+    let state;
+    try { state = jwt.verify(String(req.query.state || ''), SECRET); if (state.t !== 'bot') throw new Error('bad state'); }
+    catch { return res.send(popupPage({ type: 'phinex-bot-error', error: 'Invite session expired. Please try again.' }, dashboardPage(), 'Invite expired', 'Please start the invite again.')); }
+    const guildId = snow(req.query.guild_id) ? String(req.query.guild_id) : (snow(state.g) ? String(state.g) : null);
+    res.send(popupPage({ type: 'phinex-bot-added', guildId }, dashboardPage(guildId ? '#added=' + guildId : ''),
         'PhineX was added!', 'Returning to the dashboard…'));
 });
 
@@ -296,7 +320,13 @@ app.get('/api/guild/:guildId', ...guildRoute(ah(async (req, res) => {
     const roles = [...g.roles.cache.values()].filter(r => r.id !== g.id)
         .map(r => ({ id: r.id, name: r.name, color: r.hexColor, position: r.position, managed: r.managed, editable: r.editable, members: r.members.size }))
         .sort((a, b) => b.position - a.position);
-    const settings = await db.getGuildSettings(g.id);
+    const rawSettings = await db.getGuildSettings(g.id);
+    const baseSettings = D.defaults();
+    const settings = { ...baseSettings, ...rawSettings,
+        automod: { ...baseSettings.automod, ...(rawSettings.automod || {}), spam: { ...baseSettings.automod.spam, ...(rawSettings.automod?.spam || {}) } },
+        leveling: { ...baseSettings.leveling, ...(rawSettings.leveling || {}), roleRewards: rawSettings.leveling?.roleRewards || baseSettings.leveling.roleRewards },
+        logging: { ...baseSettings.logging, ...(rawSettings.logging || {}) }
+    };
     delete settings.guild_id; delete settings.updated_at;
     const want = { ViewChannel: 'View Channels', SendMessages: 'Send Messages', EmbedLinks: 'Embed Links', ManageMessages: 'Manage Messages',
         ManageChannels: 'Manage Channels', ManageRoles: 'Manage Roles', KickMembers: 'Kick Members', BanMembers: 'Ban Members',

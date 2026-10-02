@@ -319,6 +319,42 @@ async function endGiveaway(message, winnersCount) {
     await db.endGiveaway(message.id).catch(err => console.error('Failed to mark giveaway ended:', err));
 }
 
+async function createGiveaway(guild, channelId, prize, winners, durationMs, startedBy = 'dashboard') {
+    const channel = guild.channels.cache.get(String(channelId));
+    if (!channel || !channel.isTextBased()) throw new Error('Giveaway channel is unavailable.');
+    const endTime = Date.now() + durationMs;
+    const embed = new EmbedBuilder().setColor('#39ff14').setTitle('🎉 Giveaway!').setDescription(`**Prize:** ${prize}\n**Winners:** ${winners}\n**Ends:** <t:${Math.floor(endTime / 1000)}:R>`).setFooter({ text: `Started by ${startedBy}` }).setTimestamp();
+    const message = await channel.send({ embeds: [embed] });
+    await message.react('🎉');
+    await db.createGiveaway(guild.id, message.id, channel.id, prize, winners, endTime);
+    setTimeout(() => endGiveaway(message, winners).catch(err => console.error('Giveaway end failed:', err)), durationMs);
+    return message;
+}
+
+async function endGiveawayNow(guildId, messageId) {
+    const record = await db.get('SELECT * FROM giveaways WHERE guild_id = ? AND message_id = ? AND ended = 0', [guildId, messageId]);
+    if (!record) return false;
+    const guild = client.guilds.cache.get(guildId);
+    const channel = guild && await guild.channels.fetch(record.channel_id).catch(() => null);
+    const message = channel && await channel.messages.fetch(messageId).catch(() => null);
+    if (!message) { await db.endGiveaway(messageId); return false; }
+    await endGiveaway(message, record.winners);
+    return true;
+}
+
+async function postPanel(guild, kind, opts = {}) {
+    const channel = guild.channels.cache.get(String(opts.channelId));
+    if (!channel || !channel.isTextBased()) throw new Error('Panel channel is unavailable.');
+    const community = kind === 'community';
+    const title = opts.title || (community ? '🌟 PhineX Community Access' : '🎫 Support Tickets');
+    const description = opts.description || (community ? 'Click below to get your one-time access code.' : 'Need help? Click below to create a private support ticket.');
+    await db.setTicketSettings(guild.id, community ? { communityChannelId: channel.id, communityLinks: { title, description, color: opts.color, buttonLabel: opts.buttonLabel, buttonEmoji: opts.buttonEmoji } } : { supportChannelId: channel.id, supportRoleId: opts.roleId });
+    const embed = new EmbedBuilder().setColor(opts.color || (community ? '#2D7D5F' : '#39ff14')).setTitle(title).setDescription(description).setFooter({ text: community ? 'PhineX Community • One-time access code' : 'PhineX Support System' }).setTimestamp();
+    const button = new ButtonBuilder().setCustomId(community ? 'create_community_ticket' : 'create_support_ticket').setLabel(opts.buttonLabel || (community ? '🎫 Get Access Code' : 'Create Ticket')).setStyle(community ? ButtonStyle.Success : ButtonStyle.Primary);
+    if (opts.buttonEmoji) button.setEmoji(opts.buttonEmoji);
+    await channel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] });
+}
+
 // ─── PREFIX COMMANDS ─────────────────────────────────────────────────────────
 client.on('messageCreate', async message => {
     if (message.author.bot || !message.guild) return;
@@ -1632,7 +1668,15 @@ client.once('ready', async () => {
     }
 });
 
-module.exports = { client, db, ADMIN_CODE };
+module.exports = {
+    client, db, ADMIN_CODE, previews: webFiles,
+    phinex: { createGiveaway, endGiveawayNow, postPanel },
+    isReady: () => client.isReady(),
+    get guilds() { return client.guilds; },
+    get users() { return client.users; },
+    get ws() { return client.ws; },
+    get loginError() { return client.loginError || null; }
+};
 client.login(config.botToken).catch(err => {
     console.error('❌ Discord login failed:', err.message);
     console.error('   Check BOT_TOKEN is current, and that "Message Content" + "Server Members" intents are enabled in the Discord Developer Portal (Bot tab).');

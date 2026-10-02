@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PhineX Dashboard</title>
+<!-- Set this to the deployed backend URL when this page is hosted on GitHub Pages. -->
+<meta name="phinex-api-url" content="">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -180,7 +182,9 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const KEY = 'phinex_token';
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: k => { try { localStorage.removeItem(k); } catch {} } };
-
+const API_BASE = (window.PHINEX_API_URL || $('meta[name="phinex-api-url"]')?.content || store.get('phinex_api_url') || '').replace(/\/$/, '');
+const API_ORIGIN = (() => { try { return new URL(API_BASE || location.origin, location.href).origin; } catch { return location.origin; } })();
+const apiUrl = path => API_BASE + path;
 let token = null, me = null, guilds = [], gid = null, G = null, current = 'overview', pendingAdded = null, loginMsg = '';
 let popup = null, watch = null, poll = null, renderSeq = 0;
 
@@ -200,7 +204,7 @@ const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = se
 async function api(method, path, body) {
   let res;
   try {
-    res = await fetch(path, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
+    res = await fetch(apiUrl(path), { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
   } catch { throw new Error('Cannot reach the server. If it was asleep, wait ~30 seconds and try again.'); }
   let data = {}; try { data = await res.json(); } catch {}
   if (res.status === 401 && data.code === 'session_expired') { expireSession(data.error); throw new Error(data.error || 'Session expired'); }
@@ -244,8 +248,8 @@ function showLogin(state = 'idle', msg = '') {
   }
 }
 function startLogin() {
-  popup = openPopup('/auth/login', 'phinex_login');
-  if (!popup) { location.href = '/auth/login'; return; }   // popup blocked: full-page flow, returns to /dashboard#token=…
+  popup = openPopup(apiUrl('/auth/login'), 'phinex_login');
+  if (!popup) { location.href = apiUrl('/auth/login'); return; }
   showLogin('waiting');
   clearInterval(watch);
   watch = setInterval(() => { if (popup && popup.closed) { clearInterval(watch); if (!token) showLogin('idle', 'The login window was closed before finishing.'); } }, 700);
@@ -254,7 +258,7 @@ function expireSession(msg) { store.del(KEY); token = null; me = null; closeModa
 function logout() { store.del(KEY); token = null; me = null; guilds = []; G = null; closeModal(); showLogin('idle'); }
 
 window.addEventListener('message', e => {
-  if (e.origin !== location.origin || !e.data || typeof e.data !== 'object') return;
+  if ((e.origin !== location.origin && e.origin !== API_ORIGIN) || !e.data || typeof e.data !== 'object') return;
   const d = e.data;
   if (d.type === 'phinex-auth' && d.token) { stopWatch(); token = d.token; store.set(KEY, token); closeModal(); bootstrap(); }
   else if (d.type === 'phinex-auth-error') { stopWatch(); showLogin('idle', d.error); }
@@ -283,8 +287,8 @@ function showServers() { stopWatch(); closeModal(); gid = null; G = null; setScr
 let inviteCtx = null;
 function startInvite(g) {
   inviteCtx = { g, authorized: false, startedAt: Date.now(), timedOut: false };
-  popup = openPopup('/invite?guild=' + encodeURIComponent(g.id), 'phinex_invite');
-  if (!popup) { location.href = '/invite?guild=' + encodeURIComponent(g.id); return; }
+  popup = openPopup(apiUrl('/invite?guild=' + encodeURIComponent(g.id)), 'phinex_invite');
+  if (!popup) { location.href = apiUrl('/invite?guild=' + encodeURIComponent(g.id)); return; }
   renderInvite();
   clearInterval(poll);
   poll = setInterval(async () => {
@@ -730,7 +734,7 @@ const actions = {
   'pick-server': el => { const g = guilds.find(x => x.id === el.dataset.id); g && (g.hasBot ? openGuild(g.id) : startInvite(g)); },
   'retry-invite': () => inviteCtx && startInvite(inviteCtx.g),
   'close-invite': () => { stopWatch(); try { popup && popup.close(); } catch {} inviteCtx = null; closeModal(); },
-  'fix-perms': () => { const g = guilds.find(x => x.id === gid) || G.guild; inviteCtx = { g, authorized: false, startedAt: Date.now() }; popup = openPopup('/invite?guild=' + gid, 'phinex_invite'); if (popup) { renderInvite(); poll = setInterval(() => { if (popup.closed) { stopWatch(); closeModal(); openGuild(gid); } }, 1000); } },
+  'fix-perms': () => { const g = guilds.find(x => x.id === gid) || G.guild; inviteCtx = { g, authorized: false, startedAt: Date.now() }; popup = openPopup(apiUrl('/invite?guild=' + gid), 'phinex_invite'); if (popup) { renderInvite(); poll = setInterval(() => { if (popup.closed) { stopWatch(); closeModal(); openGuild(gid); } }, 1000); } },
 
   'save-welcome': el => saveSettings({ welcome_channel: val('wCh'), welcome_role: val('wRole'), welcome_message: val('wMsg') }, el, 'Welcome settings saved!'),
   'save-leave': el => saveSettings({ leave_channel: val('lCh'), leave_message: val('lMsg') }, el, 'Leave message saved!'),
