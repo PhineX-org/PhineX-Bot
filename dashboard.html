@@ -183,7 +183,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const KEY = 'phinex_token';
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: k => { try { localStorage.removeItem(k); } catch {} } };
-const API_BASE = (window.PHINEX_API_URL || $('meta[name="phinex-api-url"]')?.content || store.get('phinex_api_url') || '').replace(/\/$/, '');
+const API_BASE = (window.PHINEX_API_URL || $('meta[name="phinex-api-url"]')?.content || store.get('phinex_api_url') || 'https://phinex-bot.onrender.com').replace(/\/$/, '');
 const API_ORIGIN = (() => { try { return new URL(API_BASE || location.origin, location.href).origin; } catch { return location.origin; } })();
 const apiUrl = path => API_BASE + path;
 let token = null, me = null, guilds = [], gid = null, G = null, current = 'overview', pendingAdded = null, loginMsg = '';
