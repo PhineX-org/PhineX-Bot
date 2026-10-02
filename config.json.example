@@ -1,10 +1,14 @@
 {
   "botToken": "YOUR_BOT_TOKEN_HERE",
-  "clientId": "YOUR_CLIENT_ID_HERE",
+  "clientId": "1488586644821905458",
   "clientSecret": "YOUR_CLIENT_SECRET_HERE",
-  "callbackURL": "https://phinex-org.github.io/PhineX-Bot/auth/discord/callback",
-  "dashboardURL": "https://phinex-org.github.io/PhineX-Bot",
+  "botInviteUrl": "https://discord.com/oauth2/authorize?client_id=1488586644821905458&permissions=8&integration_type=0&scope=bot",
+  "callbackURL": "https://your-backend.example.com/auth/callback",
+  "dashboardURL": "https://your-backend.example.com/dashboard",
   "sessionSecret": "RANDOM_STRING_FOR_SESSION_SECURITY",
   "port": 3000,
-  "apiURL": "YOUR_BACKEND_SERVER_URL_HERE"
+  "apiURL": "https://your-backend.example.com",
+  "supabaseUrl": "https://ycanwdrimhoohoufbmds.supabase.co",
+  "supabaseAnonKey": "YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY_HERE",
+  "supabaseServiceKey": "YOUR_SUPABASE_SERVICE_ROLE_KEY_HERE"
 }

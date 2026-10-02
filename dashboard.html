@@ -9,6 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#07080d;--bg2:#0d0f18;--bg3:#131620;--card:#0f1119;--border:#1c1f2e;--border2:#2a2e47;--accent:#2de08a;--accent2:#1aab67;--dim:rgba(45,224,138,.08);--glow:rgba(45,224,138,.18);--text:#e4e7f0;--text2:#8b90a8;--text3:#5a5f78;--red:#f04747;--gold:#faa61a;--blue:#5865f2;--sb:248px;--hh:60px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -187,6 +188,7 @@ const API_ORIGIN = (() => { try { return new URL(API_BASE || location.origin, lo
 const apiUrl = path => API_BASE + path;
 let token = null, me = null, guilds = [], gid = null, G = null, current = 'overview', pendingAdded = null, loginMsg = '';
 let popup = null, watch = null, poll = null, renderSeq = 0;
+let supabaseClient = null;
 
 /* ───────────────────────── helpers ───────────────────────── */
 function toast(msg, type = 'info') {
@@ -247,15 +249,38 @@ function showLogin(state = 'idle', msg = '') {
       <button class="btn discord" data-act="login"><i class="fab fa-discord"></i> Continue with Discord</button><div class="sm-txt">A small Discord window will open. It closes itself when you're done.</div>`, { dismiss: false });
   }
 }
-function startLogin() {
-  popup = openPopup(apiUrl('/auth/login'), 'phinex_login');
-  if (!popup) { location.href = apiUrl('/auth/login'); return; }
+async function getSupabaseClient() {
+  if (supabaseClient) return supabaseClient;
+  const cfg = await fetch(apiUrl('/api/auth/config')).then(r => r.ok ? r.json() : Promise.reject(new Error('Auth configuration unavailable.')));
+  if (!cfg.supabaseUrl || !cfg.supabaseAnonKey || !window.supabase) throw new Error('Supabase Discord login is not configured on the server.');
+  supabaseClient = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  return supabaseClient;
+}
+async function startLogin() {
+  popup = openPopup('about:blank', 'phinex_login');
+  if (!popup) { showLogin('idle', 'Please allow popups for Discord login.'); return; }
   showLogin('waiting');
+  try {
+    const sb = await getSupabaseClient();
+    const { data, error } = await sb.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: `${location.origin}${location.pathname}`, skipBrowserRedirect: true } });
+    if (error || !data?.url) throw error || new Error('Supabase did not return a Discord login URL.');
+    popup.location.href = data.url;
+  } catch (e) { try { popup.close(); } catch {} showLogin('idle', e.message); }
   clearInterval(watch);
   watch = setInterval(() => { if (popup && popup.closed) { clearInterval(watch); if (!token) showLogin('idle', 'The login window was closed before finishing.'); } }, 700);
 }
+async function exchangeSupabaseSession(session) {
+  if (!session?.access_token) return false;
+  const data = await api('POST', '/api/auth/supabase', { access_token: session.access_token, provider_token: session.provider_token || '' });
+  token = data.token; me = data.user; store.set(KEY, token);
+  if (window.opener && !window.opener.closed) {
+    try { window.opener.postMessage({ type: 'phinex-auth', token, user: me }, location.origin); window.close(); return true; } catch {}
+  }
+  history.replaceState({}, document.title, location.pathname + location.search); closeModal(); bootstrap();
+  return true;
+}
 function expireSession(msg) { store.del(KEY); token = null; me = null; closeModal(); showLogin('idle', msg || 'Your session expired. Please log in again.'); }
-function logout() { store.del(KEY); token = null; me = null; guilds = []; G = null; closeModal(); showLogin('idle'); }
+function logout() { store.del(KEY); token = null; me = null; guilds = []; G = null; if (supabaseClient) supabaseClient.auth.signOut().catch(() => {}); closeModal(); showLogin('idle'); }
 
 window.addEventListener('message', e => {
   if ((e.origin !== location.origin && e.origin !== API_ORIGIN) || !e.data || typeof e.data !== 'object') return;
@@ -340,7 +365,7 @@ function readHash() {
   if (p.get('token')) { token = p.get('token'); store.set(KEY, token); }
   if (p.get('added')) pendingAdded = p.get('added');
   if (p.get('error')) loginMsg = p.get('error');
-  if (location.hash) history.replaceState(null, '', location.pathname);
+  if (p.has('token') || p.has('added') || p.has('error')) history.replaceState(null, '', location.pathname);
 }
 async function bootstrap() {
   setScreen('servers'); $('#serverGrid').innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spinner"></div>Loading your servers…</div>';
@@ -796,7 +821,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal.
 /* ───────────────────────── start ───────────────────────── */
 readHash();
 token = token || store.get(KEY);
-if (token) bootstrap(); else showLogin('idle', loginMsg);
+async function initAuth() {
+  if (token) return bootstrap();
+  try {
+    const sb = await getSupabaseClient();
+    const { data } = await sb.auth.getSession();
+    if (data.session && await exchangeSupabaseSession(data.session)) return;
+  } catch (e) { if (loginMsg) loginMsg += ` ${e.message}`; }
+  showLogin('idle', loginMsg);
+}
+initAuth();
 })();
 </script>
 </body>

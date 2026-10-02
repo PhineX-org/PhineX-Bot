@@ -77,10 +77,11 @@ Edit `config.json`:
 ```json
 {
   "botToken": "YOUR_BOT_TOKEN",
-  "clientId": "YOUR_CLIENT_ID",
+  "clientId": "1488586644821905458",
   "clientSecret": "YOUR_CLIENT_SECRET",
-  "callbackURL": "https://your-backend.com/auth/discord/callback",
-  "dashboardURL": "https://phinex-org.github.io/PhineX-Bot",
+  "botInviteUrl": "https://discord.com/oauth2/authorize?client_id=1488586644821905458&permissions=8&integration_type=0&scope=bot",
+  "callbackURL": "https://your-backend.com/auth/callback",
+  "dashboardURL": "https://your-backend.com/dashboard",
   "sessionSecret": "RANDOM_SECRET_STRING",
   "port": 3000
 }
@@ -89,8 +90,9 @@ Edit `config.json`:
 4. **Setup Discord OAuth**
    - Go to [Discord Developer Portal](https://discord.com/developers/applications)
    - Navigate to OAuth2 → Redirects
-   - Add: `https://phinex-org.github.io/PhineX-Bot/auth/discord/callback`
-   - **IMPORTANT**: If hosting backend separately, use your backend URL instead
+   - Configure Discord as the Supabase Auth provider.
+   - Supabase’s Discord callback is `https://ycanwdrimhoohoufbmds.supabase.co/auth/v1/callback`.
+   - Add your frontend URL to Supabase Auth → URL Configuration → Redirect URLs.
 
 5. **Start the bot**
 ```bash
@@ -148,41 +150,41 @@ git push heroku main
 
 #### 2. Configure Frontend for GitHub Pages
 
-Update your `dashboard.html` and `index.html` to point API calls to your backend:
+Configure the backend through environment variables; no dashboard source edit is required when the frontend is served by the backend:
 
 ```javascript
-// Change this:
-const API_URL = 'http://localhost:3000';
-
-// To this:
-const API_URL = 'https://your-backend.railway.app';
+BASE_URL=https://your-backend.railway.app
+DASHBOARD_URL=https://your-backend.railway.app/dashboard
+SUPABASE_URL=https://ycanwdrimhoohoufbmds.supabase.co
+SUPABASE_ANON_KEY=your_supabase_anon_or_publishable_key
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
 ```
 
 #### 3. Update Discord OAuth
 
 In Discord Developer Portal:
-- **Redirect URL**: `https://your-backend.railway.app/auth/discord/callback`
+- **Supabase Discord callback**: `https://ycanwdrimhoohoufbmds.supabase.co/auth/v1/callback`
 - The callback must point to your **backend server**, not GitHub Pages
 
 #### 4. Update config.json
 
 ```json
 {
-  "callbackURL": "https://your-backend.railway.app/auth/discord/callback",
-  "dashboardURL": "https://phinex-org.github.io/PhineX-Bot",
+  "callbackURL": "https://your-backend.railway.app/auth/callback",
+  "dashboardURL": "https://your-backend.railway.app/dashboard",
 }
 ```
 
 ### Fixing the 404 Error
 
-The GitHub 404 error at `https://phinex-org.github.io/auth/discord` happens because:
-1. GitHub Pages is trying to serve a static page at `/auth/discord`
+An OAuth 404 error on GitHub Pages happens because:
+1. GitHub Pages is trying to serve a static page as an OAuth callback
 2. But OAuth callbacks need a **backend server** to handle them
 3. Your bot backend must be hosted separately (not on GitHub Pages)
 
 **Solution:**
 1. Host bot backend on Railway/Heroku/etc.
-2. Update OAuth redirect to point to backend: `https://your-backend.com/auth/discord/callback`
+2. Configure Supabase to use `https://ycanwdrimhoohoufbmds.supabase.co/auth/v1/callback` as the Discord provider callback
 3. GitHub Pages only serves the frontend HTML/CSS/JS
 
 ## 📚 Complete Command List

@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { createClient } = require('@supabase/supabase-js');
 const { PermissionsBitField, ChannelType } = require('discord.js');
 const config = require('./config');
 const D = require('./defaults');
@@ -13,6 +14,8 @@ const DISCORD = process.env.DISCORD_API_BASE || 'https://discord.com/api/v10';
 const AUTHORIZE_URL = process.env.DISCORD_AUTHORIZE_URL || 'https://discord.com/oauth2/authorize'; // overridable for tests
 const SECRET = config.sessionSecret;
 const SECURE = config.baseUrl.startsWith('https://');
+const supabaseAuth = config.supabaseUrl && config.supabasePublicKey
+    ? createClient(config.supabaseUrl, config.supabasePublicKey, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
 const ADMIN = 0x8n, MANAGE_GUILD = 0x20n;
 
 // Least-privilege permission set for the bot invite (no "Administrator")
@@ -154,6 +157,7 @@ app.get('/auth/callback', ah(async (req, res) => {
 // Bot invite that RETURNS to us (the old invite URL had no redirect, so nothing happened after authorizing)
 app.get('/invite', (req, res) => {
     const guild = snow(req.query.guild) ? String(req.query.guild) : null;
+    if (!guild && config.botInviteUrl) return res.redirect(config.botInviteUrl);
     const params = {
         client_id: config.clientId, scope: 'bot applications.commands', permissions: BOT_PERMS_BITS,
         response_type: 'code', redirect_uri: `${config.baseUrl}/auth/bot-callback`,
@@ -292,6 +296,26 @@ function textChannel(guild, id) {
 // API routes
 // ═════════════════════════════════════════════════════════════════════════════
 app.use('/api', limiter(240, 60000));
+
+app.get('/api/auth/config', (req, res) => res.json({
+    supabaseUrl: config.supabaseUrl || null,
+    supabaseAnonKey: config.supabasePublicKey || null,
+    dashboardUrl: config.dashboardURL
+}));
+
+app.post('/api/auth/supabase', ah(async (req, res) => {
+    const accessToken = typeof req.body?.access_token === 'string' ? req.body.access_token : '';
+    const providerToken = typeof req.body?.provider_token === 'string' ? req.body.provider_token : '';
+    if (!supabaseAuth || !accessToken) throw new HttpError(400, 'Supabase authentication is not configured.');
+    const { data, error } = await supabaseAuth.auth.getUser(accessToken);
+    if (error || !data.user) throw new HttpError(401, 'Your Supabase session is invalid or expired.', 'session_expired');
+    if (!providerToken) throw new HttpError(401, 'Discord did not return a provider session. Enable the Discord provider in Supabase and try again.', 'discord_provider_token_missing');
+    const meRes = await fetch(`${DISCORD}/users/@me`, { headers: { Authorization: `Bearer ${providerToken}` } });
+    if (!meRes.ok) throw new HttpError(401, 'Your Discord session is invalid or expired.', 'session_expired');
+    const me = await meRes.json();
+    const session = jwt.sign({ id: me.id, username: me.username, name: me.global_name || me.username, avatar: me.avatar, at: providerToken, supabaseUserId: data.user.id }, SECRET, { expiresIn: '6d' });
+    res.json({ token: session, user: { id: me.id, username: me.username, name: me.global_name || me.username, avatar: me.avatar } });
+}));
 
 app.get('/api/me', auth, (req, res) => res.json({ id: req.user.id, username: req.user.username, name: req.user.name, avatar: req.user.avatar }));
 
