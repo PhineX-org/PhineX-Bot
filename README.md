@@ -90,8 +90,8 @@ Edit `config.json`:
 4. **Setup Discord OAuth**
    - Go to [Discord Developer Portal](https://discord.com/developers/applications)
    - Navigate to OAuth2 → Redirects
-   - Add exactly: `https://your-backend.com/auth/callback`
-   - For this deployment, use: `https://phinex-bot.onrender.com/auth/callback`
+   - For dashboard login through Supabase, add exactly: `https://ycanwdrimhoohoufbmds.supabase.co/auth/v1/callback`
+   - For the optional direct backend fallback, add: `https://phinex-bot.onrender.com/auth/callback`
 
 5. **Start the bot**
 ```bash
@@ -162,8 +162,9 @@ SUPABASE_SERVICE_KEY=your_supabase_service_role_key
 #### 3. Update Discord OAuth
 
 In Discord Developer Portal:
-- **Discord OAuth redirect**: `https://phinex-bot.onrender.com/auth/callback`
-- The callback must point to your **backend server**, not GitHub Pages
+- **Supabase dashboard login redirect**: `https://ycanwdrimhoohoufbmds.supabase.co/auth/v1/callback`
+- **Bot installation callback**: `https://phinex-bot.onrender.com/auth/bot-callback`
+- Supabase’s Discord provider must use the same Discord application client ID and client secret.
 
 #### 4. Update config.json
 
@@ -183,8 +184,8 @@ An OAuth 404 error on GitHub Pages happens because:
 
 **Solution:**
 1. Host bot backend on Render (the current service is `phinex-bot.onrender.com`)
-2. Register `https://phinex-bot.onrender.com/auth/callback` in Discord Developer Portal → OAuth2 → Redirects
-3. GitHub Pages only serves the frontend HTML/CSS/JS
+2. Register the Supabase callback above in Discord Developer Portal → OAuth2 → Redirects
+3. GitHub Pages only serves the frontend HTML/CSS/JS; Render handles the API and bot
 
 ## 📚 Complete Command List
 
