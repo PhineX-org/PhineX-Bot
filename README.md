@@ -90,9 +90,8 @@ Edit `config.json`:
 4. **Setup Discord OAuth**
    - Go to [Discord Developer Portal](https://discord.com/developers/applications)
    - Navigate to OAuth2 → Redirects
-   - Configure Discord as the Supabase Auth provider.
-   - Supabase’s Discord callback is `https://ycanwdrimhoohoufbmds.supabase.co/auth/v1/callback`.
-   - Add your frontend URL to Supabase Auth → URL Configuration → Redirect URLs.
+   - Add exactly: `https://your-backend.com/auth/callback`
+   - For this deployment, use: `https://phinex-bot.onrender.com/auth/callback`
 
 5. **Start the bot**
 ```bash
@@ -153,8 +152,8 @@ git push heroku main
 Configure the backend through environment variables; no dashboard source edit is required when the frontend is served by the backend:
 
 ```javascript
-BASE_URL=https://your-backend.railway.app
-DASHBOARD_URL=https://your-backend.railway.app/dashboard
+BASE_URL=https://phinex-bot.onrender.com
+DASHBOARD_URL=https://phinex-org.github.io
 SUPABASE_URL=https://ycanwdrimhoohoufbmds.supabase.co
 SUPABASE_ANON_KEY=your_supabase_anon_or_publishable_key
 SUPABASE_SERVICE_KEY=your_supabase_service_role_key
@@ -163,7 +162,7 @@ SUPABASE_SERVICE_KEY=your_supabase_service_role_key
 #### 3. Update Discord OAuth
 
 In Discord Developer Portal:
-- **Supabase Discord callback**: `https://ycanwdrimhoohoufbmds.supabase.co/auth/v1/callback`
+- **Discord OAuth redirect**: `https://phinex-bot.onrender.com/auth/callback`
 - The callback must point to your **backend server**, not GitHub Pages
 
 #### 4. Update config.json
@@ -183,8 +182,8 @@ An OAuth 404 error on GitHub Pages happens because:
 3. Your bot backend must be hosted separately (not on GitHub Pages)
 
 **Solution:**
-1. Host bot backend on Railway/Heroku/etc.
-2. Configure Supabase to use `https://ycanwdrimhoohoufbmds.supabase.co/auth/v1/callback` as the Discord provider callback
+1. Host bot backend on Render (the current service is `phinex-bot.onrender.com`)
+2. Register `https://phinex-bot.onrender.com/auth/callback` in Discord Developer Portal → OAuth2 → Redirects
 3. GitHub Pages only serves the frontend HTML/CSS/JS
 
 ## 📚 Complete Command List
