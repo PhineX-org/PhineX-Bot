@@ -279,6 +279,14 @@ async function exchangeSupabaseSession(session) {
   history.replaceState({}, document.title, location.pathname + location.search); closeModal(); bootstrap();
   return true;
 }
+function reportAuthError(message) {
+  const error = String(message || 'Discord login could not be completed.');
+  if (window.opener && !window.opener.closed) {
+    try { window.opener.postMessage({ type: 'phinex-auth-error', error }, '*'); window.close(); return; } catch {}
+  }
+  loginMsg = error;
+  showLogin('idle', error);
+}
 function expireSession(msg) { store.del(KEY); token = null; me = null; closeModal(); showLogin('idle', msg || 'Your session expired. Please log in again.'); }
 function logout() { store.del(KEY); token = null; me = null; guilds = []; G = null; if (supabaseClient) supabaseClient.auth.signOut().catch(() => {}); closeModal(); showLogin('idle'); }
 
@@ -827,7 +835,7 @@ async function initAuth() {
     const sb = await getSupabaseClient();
     const { data } = await sb.auth.getSession();
     if (data.session && await exchangeSupabaseSession(data.session)) return;
-  } catch (e) { if (loginMsg) loginMsg += ` ${e.message}`; }
+  } catch (e) { reportAuthError(e.message); return; }
   showLogin('idle', loginMsg);
 }
 initAuth();
